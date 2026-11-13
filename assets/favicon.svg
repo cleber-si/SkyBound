@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 600">
+  <!-- Small-size SkyBound mark (16-64 px): outer meridians dropped, gaps widened, one star -->
+  <defs>
+    <clipPath id="c"><path d="M20,320 A280,294 0 0 1 580,320 A280,111 0 0 1 20,320 Z"/></clipPath>
+    <mask id="m" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="600">
+      <rect width="600" height="600" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="26">
+        <circle cx="300" cy="472" r="320"/>
+        <path d="M300,10 C222,40 160,140 178,260"/>
+        <path d="M300,10 C378,40 440,140 422,260"/>
+      </g>
+      <circle cx="300" cy="280" r="152" fill="#000"/>
+    </mask>
+  </defs>
+  <rect width="600" height="600" rx="120" fill="#0F172A"/>
+  <g transform="translate(0 72)">
+    <g clip-path="url(#c)" mask="url(#m)">
+      <circle cx="300" cy="472" r="320" fill="#E2A123"/>
+      <path d="M0,0 H600 V600 H0 Z M-20,472 A320,320 0 0 0 620,472 A320,320 0 0 0 -20,472 Z" fill="#1A4682" fill-rule="evenodd"/>
+    </g>
+    <path d="M300,175 Q311,262 400,275 Q311,288 300,375 Q289,288 200,275 Q289,262 300,175 Z" fill="#E2A123"/>
+  </g>
+</svg>

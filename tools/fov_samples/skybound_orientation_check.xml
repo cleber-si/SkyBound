@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SkyBound orientation check. Load it in Aladin (File > Load instrument FoV) on any
+     north-up image (East to the left) and leave the roll at 0:
+       - the small SQUARE is at x = +300", the small CIRCLE at y = +300".
+     SkyBound reads x as East and y as North, so in SkyBound the square is East of the
+     centre (to the left) and the circle North (up). Checked in Aladin on 2026-11-12:
+     Aladin draws them the same way. -->
+<VOTABLE xmlns="http://www.ivoa.net/xml/VOTable/v1.1" version="1.1">
+<RESOURCE ID="skybound_orientation_check" utype="dal:footprint.geom">
+  <PARAM datatype="char" arraysize="*" name="TelescopeName" value="any" />
+  <PARAM datatype="char" arraysize="*" name="InstrumentName" value="SkyBound orientation check" />
+  <PARAM datatype="char" arraysize="*" name="Origin" value="SkyBound (Cleber Silva, UFC/MALTED)" />
+  <PARAM datatype="char" arraysize="*" utype="stc:AstroCoordSystem.CoordFrame.CARTESIAN" name="reference-frame" value="*"/>
+  <PARAM name="projection" utype="stc:AstroCoordSystem.CoordFrame.Cart2DRefFrame.projection" datatype="char" arraysize="*" value="TAN"/>
+  <PARAM name="Rollable" value="true" />
+
+  <RESOURCE ID="centre" name="centre">
+  <TABLE utype="dal:footprint.geom.segment">
+    <PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape" />
+    <FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1" />
+    <FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2" />
+    <DATA><TABLEDATA>
+      <TR><TD>-100</TD><TD>100</TD></TR>
+      <TR><TD>100</TD><TD>100</TD></TR>
+      <TR><TD>100</TD><TD>-100</TD></TR>
+      <TR><TD>-100</TD><TD>-100</TD></TR>
+    </TABLEDATA></DATA>
+  </TABLE>
+  </RESOURCE>
+
+  <RESOURCE ID="x_plus" name="square at x = +300 (East in SkyBound)">
+  <TABLE utype="dal:footprint.geom.segment">
+    <PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape" />
+    <FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1" />
+    <FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2" />
+    <DATA><TABLEDATA>
+      <TR><TD>270</TD><TD>30</TD></TR>
+      <TR><TD>330</TD><TD>30</TD></TR>
+      <TR><TD>330</TD><TD>-30</TD></TR>
+      <TR><TD>270</TD><TD>-30</TD></TR>
+    </TABLEDATA></DATA>
+  </TABLE>
+  </RESOURCE>
+
+  <RESOURCE ID="y_plus" name="circle at y = +300 (North)">
+  <TABLE utype="dal:footprint.geom.segment">
+    <PARAM datatype="char" name="Shape" arraysize="*" value="Circle" utype="dal:footprint.geom.segment.shape" />
+    <PARAM datatype="double" unit="arcsec" name="cxPtPosition" utype="stc:AstroCoordArea.Circle.Center.C1" value="0" />
+    <PARAM datatype="double" unit="arcsec" name="cyPtPosition" utype="stc:AstroCoordArea.Circle.Center.C2" value="300" />
+    <PARAM datatype="double" unit="arcsec" name="radius" utype="stc:AstroCoordArea.Circle.radius" value="30" />
+  </TABLE>
+  </RESOURCE>
+</RESOURCE>
+</VOTABLE>

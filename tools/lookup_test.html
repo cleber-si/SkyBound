@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyBound name lookup test</title>
+<style>
+  :root { --bg:#f7f7f5; --panel:#fff; --ink:#1d1d1f; --muted:#6b6b70; --line:#e2e2de;
+          --ok:#1f7a3a; --okbg:#e6f4ea; --bad:#a32020; --badbg:#fbe9e9; --warn:#8a5a00; --warnbg:#fff4dd; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161618; --panel:#1f1f22; --ink:#ececee; --muted:#9a9aa2; --line:#333338;
+            --ok:#7fd49a; --okbg:#1d3325; --bad:#f19a9a; --badbg:#3a1f1f; --warn:#f0c674; --warnbg:#3a301a; } }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.45 system-ui, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 16px; }
+  form { display:flex; flex-wrap:wrap; gap:10px; align-items:end; margin-bottom:16px; }
+  label { display:flex; flex-direction:column; font-size:13px; color:var(--muted); gap:3px; flex:1; }
+  textarea, button { font:inherit; padding:7px 10px; border-radius:8px; border:1px solid var(--line);
+                     background:var(--panel); color:var(--ink); }
+  textarea { font:13px/1.4 ui-monospace, Menlo, monospace; min-height:7.5em; }
+  button { cursor:pointer; background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin:0 0 14px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; color:var(--muted); font-weight:600; padding:5px 6px; border-bottom:1px solid var(--line); }
+  td { padding:5px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  td.m { font-family: ui-monospace, Menlo, monospace; white-space:nowrap; }
+  .tag { display:inline-block; font:600 12px ui-monospace, Menlo, monospace; padding:2px 7px; border-radius:6px; margin-right:6px; }
+  .ok { background:var(--okbg); color:var(--ok); } .bad { background:var(--badbg); color:var(--bad); }
+  .warn { background:var(--warnbg); color:var(--warn); }
+  .muted { color: var(--muted); }
+  textarea#out { width:100%; min-height:9em; margin-top:8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>SkyBound name lookup test</h1>
+  <p class="sub">Checks the lookup SkyBound uses when the s4field helper is not running (<code>js/lookup.js</code>):
+    each name is tried <b>online</b> from this browser (Sesame, or GAVO for a Gaia DR3 ID) and in the
+    <b>reference tables</b> (<code>js/targets.js</code>), separately, so you can see which layers work here.</p>
+
+  <form id="f">
+    <label>Names, one per line
+      <textarea id="names">AU Mic
+HD 10038
+WASP-119 b
+TOI-2631.01
+gaia:near AU Mic</textarea></label>
+    <button>Run</button>
+  </form>
+  <p class="muted" style="margin-top:-8px;font-size:13px"><code>gaia:near NAME</code> takes the brightest Gaia DR3 star within 20″
+    of NAME's online position from GAVO, then looks its <code>Gaia DR3 …</code> ID up the way SkyBound does.</p>
+
+  <div class="card" id="index"><span class="tag">…</span> loading the reference index</div>
+  <div class="card"><table id="t"><tr><th>Name</th><th>Online</th><th>Reference tables</th><th>SkyBound would use</th></tr></table></div>
+  <div class="card"><b>Results to paste back</b><textarea id="out" readonly></textarea></div>
+</main>
+<script src="../js/lookup.js"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const origin = location.protocol === "file:" ? "file:// (opened from disk)" : location.origin;
+const pos = (h) => `${h.ra.toFixed(5)} ${h.dec >= 0 ? "+" : ""}${h.dec.toFixed(5)}`;
+const sep = (a, b) => {                 // arcsec between two hits
+  const r = Math.PI / 180, c = Math.sin(a.dec * r) * Math.sin(b.dec * r) + Math.cos(a.dec * r) * Math.cos(b.dec * r) * Math.cos((a.ra - b.ra) * r);
+  return Math.acos(Math.min(1, c)) / r * 3600;
+};
+
+async function gaiaNear(name) {        // a real Gaia DR3 ID to test the GAVO route with
+  const h = await Lookup.online(name);
+  if (!h) throw new Error(`${name} unknown online`);
+  const q = `SELECT TOP 1 source_id FROM gaia.dr3lite WHERE 1=CONTAINS(POINT('ICRS',ra,dec),CIRCLE('ICRS',${h.ra},${h.dec},0.0056)) ORDER BY phot_g_mean_mag`;
+  const r = await fetch("https://dc.g-vo.org/tap/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=" + encodeURIComponent(q));
+  const id = (await r.text()).trim().split(/\r?\n/)[1];
+  if (!id) throw new Error("no Gaia star there");
+  return `Gaia DR3 ${id.trim()}`;
+}
+
+async function run() {
+  const t = $("t");
+  t.querySelectorAll("tr:not(:first-child)").forEach((r) => r.remove());
+  const lines = [`SkyBound name lookup test`, `date: ${new Date().toISOString()}`, `page origin: ${origin}`, `browser: ${navigator.userAgent}`, ``];
+  const ix = await Lookup.loadIndex();
+  $("index").innerHTML = ix
+    ? `<span class="tag ok">INDEX</span> js/targets.js: ${ix.t.rows.length} stars, ${ix.map.size} names, built ${esc(ix.t.built)} from ${esc(ix.t.files.join(", "))}`
+    : `<span class="tag bad">NO INDEX</span> js/targets.js not found: run <code>python3 tools/build_targets.py &lt;reference_tables folder&gt;</code>`;
+  lines.push(ix ? `index: ${ix.t.rows.length} stars, built ${ix.t.built}` : "index: none", "");
+  for (let name of $("names").value.split("\n").map((s) => s.trim()).filter(Boolean)) {
+    const tr = t.insertRow();
+    let on, tab, use;
+    try { if (/^gaia:near /i.test(name)) name = await gaiaNear(name.slice(10)); } catch (e) { name = `${name} (${e.message})`; }
+    tr.insertCell().textContent = name;
+    const t0 = performance.now();
+    try { on = await Lookup.online(name); } catch (e) { on = { err: e.message }; }
+    const ms = performance.now() - t0;
+    try { tab = await Lookup.fromTables(name); } catch (e) { tab = { err: e.message }; }
+    try { use = await Lookup.resolve(name); } catch (e) { use = { err: e.message.replace(/<[^>]+>/g, "") }; }
+    const cell = (h, extra = "") => !h ? `<span class="tag warn">UNKNOWN</span>`
+      : h.missing ? `<span class="tag bad">NO INDEX</span>`
+      : h.err ? `<span class="tag bad">FAIL</span>${esc(h.err)}`
+      : `<span class="tag ok">OK</span><span style="font-family:ui-monospace,monospace">${pos(h)}</span><br><span class="muted">${esc(h.source)}${h.note ? " · " + esc(h.note) : ""}${extra}</span>`;
+    tr.insertCell().innerHTML = cell(on, on && !on.err ? ` · ${(ms / 1000).toFixed(1)} s` : "");
+    const d = on && tab && !on.err && !tab.err && !tab.missing ? ` · ${sep(on, tab).toFixed(1)}″ from online` : "";
+    tr.insertCell().innerHTML = cell(tab, d);
+    tr.insertCell().innerHTML = use.err ? `<span class="tag bad">NONE</span>${esc(use.err)}` : esc(use.source);
+    const st = (h) => !h ? "UNKNOWN" : h.missing ? "NO INDEX" : h.err ? `FAIL ${h.err}` : `OK ${pos(h)} ${h.source}`;
+    lines.push(`${name}`, `  online: ${st(on)}${on && !on.err ? ` (${(ms / 1000).toFixed(1)} s)` : ""}`, `  tables: ${st(tab)}${d.replace(" · ", " ")}`,
+               `  uses:   ${use.err ? "none" : use.source}`);
+  }
+  $("out").value = lines.join("\n");
+}
+
+$("f").addEventListener("submit", (ev) => { ev.preventDefault(); run(); });
+run();
+</script>
+</body>
+</html>

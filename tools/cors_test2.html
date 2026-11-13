@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyBound CORS test 2</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --panel: #ffffff; --ink: #1d1d1f; --muted: #6b6b70; --line: #e2e2de;
+    --ok: #1f7a3a; --okbg: #e6f4ea; --bad: #a32020; --badbg: #fbe9e9;
+    --warn: #8a5a00; --warnbg: #fdf3dc; --run: #2350a8; --runbg: #e8eefb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #161618; --panel: #1f1f22; --ink: #ececee; --muted: #9a9aa2; --line: #333338;
+      --ok: #7fd49a; --okbg: #1d3325; --bad: #f19a9a; --badbg: #3a1f1f;
+      --warn: #f0c46b; --warnbg: #3a2f17; --run: #9bb8f5; --runbg: #1e2a44; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 18px; }
+  button { font: inherit; padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line);
+           background: var(--panel); color: var(--ink); cursor: pointer; }
+  button.primary { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  button:disabled { opacity: .5; cursor: default; }
+  .origin { font: 13px ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+            padding: 6px 16px; margin: 0 0 14px; }
+  section h2 { font-size: 15px; margin: 10px 0 4px; }
+  .row { display: grid; grid-template-columns: 88px 1fr; gap: 12px; padding: 10px 0;
+         border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .tag { font: 600 12px ui-monospace, Menlo, monospace; padding: 3px 8px; border-radius: 6px;
+         text-align: center; align-self: start; background: var(--line); color: var(--muted); }
+  .tag.ok { background: var(--okbg); color: var(--ok); }
+  .tag.bad { background: var(--badbg); color: var(--bad); }
+  .tag.warn { background: var(--warnbg); color: var(--warn); }
+  .tag.run { background: var(--runbg); color: var(--run); }
+  .label { font-weight: 600; }
+  .detail { color: var(--muted); font-size: 13.5px; word-break: break-word; }
+  .detail a { color: inherit; }
+  .thumbs { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .thumbs img { width: 140px; height: 140px; object-fit: cover; border-radius: 6px;
+                border: 1px solid var(--line); background: var(--line); }
+  textarea { width: 100%; min-height: 220px; font: 12.5px ui-monospace, Menlo, monospace;
+             background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+             border-radius: 8px; padding: 10px; }
+  .note { font-size: 13.5px; color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>SkyBound CORS test, round 2</h1>
+  <p class="sub">Follows up round 1: GAVO in depth, other Gaia routes and name resolvers. Checks which services a web page can query directly from this browser.
+     Test target: AU Mic (RA 311.2897°, Dec −31.3409°).</p>
+
+  <div class="bar">
+    <button class="primary" id="runAll">Run all tests</button>
+    <button id="copy" disabled>Copy results</button>
+    <span class="origin" id="origin"></span>
+  </div>
+
+  <div id="groups"></div>
+
+  <section>
+    <h2>Results to paste back</h2>
+    <textarea id="out" readonly placeholder="Results appear here after the run."></textarea>
+    <p class="note">A test marked BLOCKED failed inside the page. Open its link in a new tab:
+      if the link works there, the service does not allow web pages to read it (CORS);
+      if the link also fails, the service itself is down or unreachable.</p>
+  </section>
+</main>
+
+<script>
+"use strict";
+const RA = 311.2897, DEC = -31.3409;
+const ESA = "https://gea.esac.esa.int/tap-server/tap";
+const CONE_ADQL = `SELECT g.source_id, g.ra, g.dec, g.pmra, g.pmdec, g.phot_g_mean_mag, g.bp_rp,
+       g.ruwe, g.phot_variable_flag, g.non_single_star,
+       s.g_sdss_mag, s.r_sdss_mag, s.i_sdss_mag, s.z_sdss_mag, s.v_jkc_mag
+FROM gaiadr3.gaia_source AS g
+LEFT JOIN gaiadr3.synthetic_photometry_gspc AS s ON g.source_id = s.source_id
+WHERE 1 = CONTAINS(POINT('ICRS', g.ra, g.dec), CIRCLE('ICRS', ${RA}, ${DEC}, 0.27))
+  AND g.phot_g_mean_mag < 18`;
+const SMALL = (table) => `SELECT TOP 5 source_id, ra, dec FROM ${table} ` +
+  `WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', ${RA}, ${DEC}, 0.02))`;
+
+const tapGet = (base, adql) => `${base}/sync?REQUEST=doQuery&LANG=ADQL&FORMAT=csv&QUERY=${encodeURIComponent(adql)}`;
+const DSS = `https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red&r=${RA}&d=${DEC}&e=J2000&h=8&w=8&f=gif`;
+const SKYVIEW = `https://skyview.gsfc.nasa.gov/current/cgi/runquery.pl?Survey=DSS2%20Red&Position=${RA},${DEC}&Size=0.13&Pixels=500&Return=JPEG`;
+const EXO = "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=" +
+  encodeURIComponent("select hostname,ra,dec from pscomppars where hostname='AU Mic'") + "&format=csv";
+
+class Blocked extends Error {}
+
+async function fetchT(url, opts = {}, ms = 30000) {
+  const ctl = new AbortController();
+  const t = setTimeout(() => ctl.abort(), ms);
+  try {
+    return await fetch(url, { ...opts, signal: ctl.signal, cache: "no-store" });
+  } catch (e) {
+    if (e.name === "AbortError") throw new Error(`no answer within ${ms / 1000} s`);
+    throw new Blocked("blocked: the browser refused the response (CORS) or the server is unreachable");
+  } finally { clearTimeout(t); }
+}
+
+async function textOf(url, opts, ms) {
+  const r = await fetchT(url, opts, ms);
+  const body = await r.text();
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${body.slice(0, 160).replace(/\s+/g, " ")}`);
+  return { r, body };
+}
+
+const csvRows = (txt) => Math.max(0, txt.trim().split(/\r?\n/).length - 1);
+
+async function tapAsync(base, adql, note) {
+  const body = new URLSearchParams({ REQUEST: "doQuery", LANG: "ADQL", FORMAT: "csv", PHASE: "RUN", QUERY: adql });
+  const { r, body: first } = await textOf(base + "/async", { method: "POST", body }, 30000);
+  let job = r.url.replace(/\/$/, "");
+  if (job.endsWith("/async")) {
+    const m = first.match(/<uws:jobId>\s*([^<\s]+)\s*<\/uws:jobId>/);
+    if (!m) throw new Error("job created but its id could not be read");
+    job = `${base}/async/${m[1]}`;
+  }
+  const t0 = performance.now();
+  for (;;) {
+    const phase = (await textOf(job + "/phase", {}, 20000)).body.trim().toUpperCase();
+    note(`job ${phase.toLowerCase()} (${((performance.now() - t0) / 1000).toFixed(0)} s)`);
+    if (phase === "COMPLETED") break;
+    if (phase === "ERROR" || phase === "ABORTED") {
+      const x = (await textOf(job, {}, 20000)).body;
+      const m = x.match(/<uws:message>([\s\S]*?)<\/uws:message>/);
+      throw new Error(`job ${phase}: ${m ? m[1].trim() : "no message"}`);
+    }
+    if (performance.now() - t0 > 180000) throw new Error("job still running after 180 s");
+    await new Promise((res) => setTimeout(res, 2000));
+  }
+  return (await textOf(job + "/results/result", {}, 60000)).body;
+}
+
+function imgLoads(url, ms = 30000) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const t = setTimeout(() => { img.src = ""; resolve({ ok: false, img }); }, ms);
+    img.onload = () => { clearTimeout(t); resolve({ ok: img.naturalWidth > 0, img }); };
+    img.onerror = () => { clearTimeout(t); resolve({ ok: false, img }); };
+    img.src = url;
+  });
+}
+
+const GAVO = "https://dc.g-vo.org/tap";
+const ARI = "https://gaia.ari.uni-heidelberg.de/tap";
+const MAST = "https://mast.stsci.edu/api/v0/invoke";
+const LITE_CONE = `SELECT source_id, ra, dec, pmra, pmdec, phot_g_mean_mag,
+       phot_bp_mean_mag - phot_rp_mean_mag AS bp_rp, ruwe
+FROM gaia.dr3lite
+WHERE 1 = CONTAINS(POINT('ICRS', ra, dec), CIRCLE('ICRS', ${RA}, ${DEC}, 0.27))
+  AND phot_g_mean_mag < 18`;
+const GAVO_COLS = `SELECT table_name, column_name FROM tap_schema.columns
+WHERE column_name IN ('v_jkc_mag', 'r_sdss_mag', 'phot_variable_flag', 'non_single_star')`;
+
+async function mast(service, params, note) {
+  const req = { service, params, format: "json", pagesize: 2000, page: 1 };
+  const t0 = performance.now();
+  for (;;) {
+    const body = new URLSearchParams({ request: JSON.stringify(req) });
+    const { body: txt } = await textOf(MAST, { method: "POST", body }, 60000);
+    const js = JSON.parse(txt);
+    if (js.status !== "EXECUTING") {
+      if (js.status && js.status !== "COMPLETE") throw new Error(`MAST status ${js.status}: ${js.msg || ""}`);
+      return js;
+    }
+    note(`MAST still working (${((performance.now() - t0) / 1000).toFixed(0)} s)`);
+    if (performance.now() - t0 > 120000) throw new Error("MAST still working after 120 s");
+    await new Promise((res) => setTimeout(res, 2000));
+  }
+}
+
+async function mastName(name, note) {
+  const js = await mast("Mast.Name.Lookup", { input: name, format: "json" }, note);
+  const c = (js.resolvedCoordinate || [])[0];
+  if (!c) throw new Error("answered, but the name was not resolved");
+  return `${c.canonicalName || name}: RA ${(+c.ra).toFixed(5)}, Dec ${(+c.decl).toFixed(5)}`;
+}
+
+const TESTS = [
+  { group: "Gaia, GAVO (worked in round 1)", id: "A1", label: "GAVO dr3lite, full AU Mic cone (sync)",
+    link: tapGet(GAVO, LITE_CONE),
+    run: async () => { const { body } = await textOf(tapGet(GAVO, LITE_CONE), {}, 60000); return `${csvRows(body)} rows (ESA download with the same cuts: 670)`; } },
+  { group: "Gaia, GAVO (worked in round 1)", id: "A2", label: "GAVO, same cone as an async job",
+    link: GAVO + "/async",
+    run: async (note) => `${csvRows(await tapAsync(GAVO, LITE_CONE, note))} rows` },
+  { group: "Gaia, GAVO (worked in round 1)", id: "A3", label: "GAVO, does any table carry synthetic photometry or variability flags?",
+    link: tapGet(GAVO, GAVO_COLS),
+    run: async () => {
+      const { body } = await textOf(tapGet(GAVO, GAVO_COLS));
+      const rows = body.trim().split(/\r?\n/).slice(1);
+      return rows.length ? rows.join(" | ") : "none found";
+    } },
+
+  { group: "Gaia, other routes", id: "B1", label: "ARI Heidelberg Gaia TAP, full gaia_source (sync)",
+    link: tapGet(ARI, SMALL("gaiadr3.gaia_source")),
+    run: async () => { const { body } = await textOf(tapGet(ARI, SMALL("gaiadr3.gaia_source"))); return `${csvRows(body)} rows`; } },
+  { group: "Gaia, other routes", id: "B2", label: "ARI Heidelberg, synthetic photometry table",
+    link: tapGet(ARI, "SELECT TOP 3 source_id, v_jkc_mag, r_sdss_mag FROM gaiadr3.synthetic_photometry_gspc"),
+    run: async () => { const { body } = await textOf(tapGet(ARI, "SELECT TOP 3 source_id, v_jkc_mag, r_sdss_mag FROM gaiadr3.synthetic_photometry_gspc")); return `${csvRows(body)} rows`; } },
+  { group: "Gaia, other routes", id: "B3", label: "MAST Gaia DR3 cone (2′), which columns come back",
+    link: MAST,
+    run: async (note) => {
+      const js = await mast("Mast.Catalogs.GaiaDR3.Cone", { ra: RA, dec: DEC, radius: 0.033 }, note);
+      const cols = (js.fields || []).map((f) => f.name);
+      const want = ["pmra", "ruwe", "phot_variable_flag", "non_single_star", "bp_rp"].map((c) => `${c} ${cols.includes(c) ? "yes" : "no"}`);
+      return `${(js.data || []).length} rows, ${cols.length} columns; ${want.join(", ")}`;
+    } },
+
+  { group: "Target names", id: "M1", label: "MAST name lookup, 'AU Mic'", link: MAST,
+    run: (note) => mastName("AU Mic", note) },
+  { group: "Target names", id: "M2", label: "MAST name lookup, 'HIP 67522'", link: MAST,
+    run: (note) => mastName("HIP 67522", note) },
+  { group: "Target names", id: "M3", label: "MAST name lookup, 'TOI-2631'", link: MAST,
+    run: (note) => mastName("TOI-2631", note) },
+  { group: "Target names", id: "M4", label: "MAST TIC catalogue cone (TIC ID, Gaia ID, Tmag)", link: MAST,
+    run: async (note) => {
+      const js = await mast("Mast.Catalogs.Tic.Cone", { ra: RA, dec: DEC, radius: 0.003 }, note);
+      const d = (js.data || [])[0];
+      if (!d) throw new Error("answered, no rows");
+      return `TIC ${d.ID}, Gaia ${d.GAIA}, Tmag ${(+d.Tmag).toFixed(2)}, V ${d.Vmag}`;
+    } },
+  { group: "Target names", id: "E1", label: "ExoFOP target page as JSON, TOI-2631",
+    link: "https://exofop.ipac.caltech.edu/tess/target.php?id=TOI-2631&json",
+    run: async () => {
+      const { body } = await textOf("https://exofop.ipac.caltech.edu/tess/target.php?id=TOI-2631&json");
+      const js = JSON.parse(body);
+      const c = js.coordinates || {};
+      return `TIC ${js.basic_info ? js.basic_info.tic_id : "?"}, RA ${c.ra || "?"}, Dec ${c.dec || "?"}`;
+    } },
+  { group: "Target names", id: "S1", label: "Sesame, Strasbourg (https), retry",
+    link: "https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?AU%20Mic",
+    run: async () => sesame("https://cds.unistra.fr/cgi-bin/nph-sesame/-oxp/SNV?AU%20Mic") },
+];
+
+async function sesame(url) {
+  const { body } = await textOf(url, {}, 20000);
+  const ra = body.match(/<jradeg>\s*([\d.+-]+)/), de = body.match(/<jdedeg>\s*([\d.+-]+)/);
+  if (!ra || !de) throw new Error("answered, but no coordinates in the reply");
+  return `RA ${(+ra[1]).toFixed(5)}, Dec ${(+de[1]).toFixed(5)}`;
+}
+
+async function imageTest(url, row) {
+  const shown = await imgLoads(url);
+  const thumbs = row.querySelector(".thumbs");
+  if (shown.ok) { shown.img.alt = "sky cutout"; thumbs.appendChild(shown.img); }
+  let readable = "pixels readable by the page: ";
+  try { const r = await fetchT(url, {}, 30000); readable += r.ok ? "yes" : `no (HTTP ${r.status})`; }
+  catch (e) { readable += "no (CORS)"; }
+  if (!shown.ok) throw new Error("image did not load; " + readable);
+  return "image displays; " + readable;
+}
+
+const results = {};
+const rowsById = {};
+
+function build() {
+  const host = document.getElementById("groups");
+  const groups = [...new Set(TESTS.map((t) => t.group))];
+  for (const g of groups) {
+    const sec = document.createElement("section");
+    sec.innerHTML = `<h2>${g}</h2>`;
+    for (const t of TESTS.filter((x) => x.group === g)) {
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = `<span class="tag">—</span><div><div class="label">${t.id} · ${t.label}</div>
+        <div class="detail">not run · <a href="${t.link}" target="_blank" rel="noopener">open link</a></div>
+        ${t.image ? '<div class="thumbs"></div>' : ""}</div>`;
+      sec.appendChild(row);
+      rowsById[t.id] = row;
+    }
+    host.appendChild(sec);
+  }
+}
+
+function setRow(t, cls, word, text) {
+  const row = rowsById[t.id];
+  const tag = row.querySelector(".tag");
+  tag.className = "tag " + cls; tag.textContent = word;
+  row.querySelector(".detail").innerHTML =
+    `${text.replace(/</g, "&lt;")} · <a href="${t.link}" target="_blank" rel="noopener">open link</a>`;
+}
+
+async function runOne(t) {
+  setRow(t, "run", "RUN", "running…");
+  const t0 = performance.now();
+  try {
+    const detail = await t.run((msg) => setRow(t, "run", "RUN", msg), rowsById[t.id]);
+    results[t.id] = { status: "OK", detail, ms: performance.now() - t0 };
+    setRow(t, "ok", "OK", `${detail} (${((performance.now() - t0) / 1000).toFixed(1)} s)`);
+  } catch (e) {
+    const status = e instanceof Blocked ? "BLOCKED" : "FAIL";
+    results[t.id] = { status, detail: e.message, ms: performance.now() - t0 };
+    setRow(t, status === "BLOCKED" ? "bad" : "warn", status, e.message);
+  }
+}
+
+function summary() {
+  const L = [
+    "SkyBound CORS test, round 2",
+    `date: ${new Date().toISOString()}`,
+    `page origin: ${location.origin === "null" ? "file:// (opened from disk)" : location.origin}`,
+    `browser: ${navigator.userAgent}`,
+    "",
+  ];
+  for (const t of TESTS) {
+    const r = results[t.id];
+    L.push(`${t.id} ${r ? r.status.padEnd(7) : "NOT RUN"} ${t.label}${r ? " :: " + r.detail + ` (${(r.ms / 1000).toFixed(1)} s)` : ""}`);
+  }
+  return L.join("\n");
+}
+
+document.getElementById("origin").textContent =
+  "page origin: " + (location.origin === "null" ? "file:// (opened from disk)" : location.origin);
+build();
+
+document.getElementById("runAll").addEventListener("click", async (ev) => {
+  ev.target.disabled = true;
+  document.getElementById("copy").disabled = true;
+  // quick tests in parallel; the long Gaia job runs alongside them
+  await Promise.all(TESTS.map(runOne));
+  document.getElementById("out").value = summary();
+  document.getElementById("copy").disabled = false;
+  ev.target.disabled = false;
+});
+
+document.getElementById("copy").addEventListener("click", async () => {
+  const ta = document.getElementById("out");
+  try { await navigator.clipboard.writeText(ta.value); }
+  catch { ta.select(); document.execCommand("copy"); }
+});
+</script>
+</body>
+</html>

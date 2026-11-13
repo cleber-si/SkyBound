@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 460" width="600" height="460" role="img" aria-labelledby="title">
+  <title id="title">SkyBound logo mark</title>
+  <defs>
+    <path id="dome" d="M20,320 A280,294 0 0 1 580,320 A280,111 0 0 1 20,320 Z"/>
+    <clipPath id="domeClip"><use href="#dome"/></clipPath>
+    <!-- gaps and aperture are cut out, so they show whatever is behind the mark -->
+    <mask id="gaps" maskUnits="userSpaceOnUse" x="0" y="0" width="600" height="460">
+      <rect width="600" height="460" fill="#fff"/>
+      <g fill="none" stroke="#000" stroke-width="7" stroke-linecap="round">
+        <circle cx="300" cy="472" r="320"/>
+        <path d="M300,18 C222,42 160,140 178,260"/>
+        <path d="M300,18 C378,42 440,140 422,260"/>
+        <path d="M86,110 C92,250 140,340 205,445"/>
+        <path d="M514,110 C508,250 460,340 395,445"/>
+      </g>
+      <circle cx="300" cy="280" r="144" fill="#000"/>
+    </mask>
+  </defs>
+  <g id="mark">
+    <g clip-path="url(#domeClip)" mask="url(#gaps)">
+      <circle cx="300" cy="472" r="320" fill="#E2A123"/>
+      <path d="M0,0 H600 V460 H0 Z M-20,472 A320,320 0 0 0 620,472 A320,320 0 0 0 -20,472 Z" fill="#1A4682" fill-rule="evenodd"/>
+    </g>
+    <g fill="#E2A123">
+      <path d="M267.156,304.402 C267.156,304.402 213.657,358.239 203.160,393.454 L227.201,416.479 C227.201,416.479 214.673,405.644 267.156,304.402 Z"/>
+      <path d="M220,290 Q222.9,308.1 241,311 Q222.9,313.9 220,332 Q217.1,313.9 199,311 Q217.1,308.1 220,290 Z"/>
+      <path d="M297,240 L306.1,265.5 L333.1,266.3 L311.7,282.8 L319.3,308.7 L297,293.5 L274.7,308.7 L282.3,282.8 L260.9,266.3 L287.9,265.5 Z"/>
+      <path d="M384,177 Q390,214 427,220 Q390,226 384,263 Q378,226 341,220 Q378,214 384,177 Z"/>
+    </g>
+  </g>
+</svg>

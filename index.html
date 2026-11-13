@@ -1,0 +1,1367 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyBound · Telescope Visibility Calculator</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 600'%3E%3Cdefs%3E%3CclipPath id='c'%3E%3Cpath d='M20,320 A280,294 0 0 1 580,320 A280,111 0 0 1 20,320 Z'/%3E%3C/clipPath%3E%3Cmask id='m' maskUnits='userSpaceOnUse' x='0' y='0' width='600' height='600'%3E%3Crect width='600' height='600' fill='%23fff'/%3E%3Cg fill='none' stroke='%23000' stroke-width='26'%3E%3Ccircle cx='300' cy='472' r='320'/%3E%3Cpath d='M300,10 C222,40 160,140 178,260'/%3E%3Cpath d='M300,10 C378,40 440,140 422,260'/%3E%3C/g%3E%3Ccircle cx='300' cy='280' r='152' fill='%23000'/%3E%3C/mask%3E%3C/defs%3E%3Crect width='600' height='600' rx='120' fill='%230F172A'/%3E%3Cg transform='translate(0 72)'%3E%3Cg clip-path='url(%23c)' mask='url(%23m)'%3E%3Ccircle cx='300' cy='472' r='320' fill='%23E2A123'/%3E%3Cpath d='M0,0 H600 V600 H0 Z M-20,472 A320,320 0 0 0 620,472 A320,320 0 0 0 -20,472 Z' fill='%231A4682' fill-rule='evenodd'/%3E%3C/g%3E%3Cpath d='M300,175 Q311,262 400,275 Q311,288 300,375 Q289,288 200,275 Q289,262 300,175 Z' fill='%23E2A123'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<style>
+  :root{
+    --navy-900:#0F172A; --navy-800:#152236; --navy-700:#1f2d47;
+    --paper:#eef1f6; --card:#ffffff; --line:#dde3ec;
+    --ink:#0F172A; --grey:#5b6b7d; --grey-2:#94a3bb;
+    --gold:#E2A123; --red:#c0392b; --green:#1f9d63;
+    --vis:#1f9d63; --sec:#E2A123; --nov:#c0392b; --none:#8896a6; --bright:#7c8aa0;
+    --sky:#5aa9e6; --moon:#e0524f;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --sans:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  [hidden]{display:none !important}
+  html,body{margin:0}
+  body{font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.5;-webkit-text-size-adjust:100%}
+
+  header{background:linear-gradient(135deg,var(--navy-900),var(--navy-700));
+         color:#fff;padding:14px 24px;display:flex;align-items:center;gap:20px}
+  header img.logo,header svg.logo{height:48px;width:auto;display:block;opacity:.98}
+  header h1 .lt{font-weight:400;opacity:.94}
+  header .divider{width:1px;align-self:stretch;background:rgba(255,255,255,.16)}
+  header .titles{display:flex;flex-direction:column;gap:1px}
+  header .eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  header h1{margin:0;font-size:21px;font-weight:650;letter-spacing:.01em}
+  header .sub{font-size:12.5px;color:#b9c6d6}
+  header .sub em{font-style:italic;color:var(--gold);font-weight:600}
+  .hdr-right{margin-left:auto;align-self:flex-start;text-align:right;display:flex;flex-direction:column;gap:3px}
+  .hdr-right .ver{font-size:12px;font-weight:600;color:#8ea3bd;letter-spacing:.04em}
+  .hdr-right .sig{font-size:11.5px;color:#9fb0c4}
+  .hdr-right .sig strong{color:#dfe7f0}
+  .hdr-right .sig a{color:#bcd0e6;text-decoration:none}
+  .hdr-right .sig a:hover{text-decoration:underline}
+
+  main{max-width:1180px;margin:0 auto;padding:20px 20px 44px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+        padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 2px rgba(11,26,46,.04)}
+  .card > h2{margin:0 0 14px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--grey)}
+  .card-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+  .card-head h2{margin:0;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--grey)}
+  .card-head h2 .vis-date{text-transform:none;letter-spacing:0;color:var(--grey-2);font-weight:500;margin-left:8px;font-size:12px}
+
+  .grid{display:grid;gap:12px 18px}
+  .g-target{grid-template-columns:1fr 1fr}
+  .g-site{grid-template-columns:1fr 1fr 1fr}
+  @media(max-width:620px){.g-target,.g-site{grid-template-columns:1fr}}
+
+  label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--grey)}
+  label .hint{color:var(--grey-2);font-weight:400;font-size:11px}
+  input[type=text],input[type=number],input[type=datetime-local],select{
+    font-family:var(--mono);font-size:14px;color:var(--ink);padding:8px 10px;
+    border:1px solid var(--line);border-radius:8px;background:#fff}
+  select{font-family:var(--sans)}
+  input:focus,select:focus{outline:2px solid var(--gold);outline-offset:0;border-color:transparent}
+  .check{flex-direction:row;align-items:center;gap:8px;margin-top:10px;font-size:12.5px;color:var(--ink)}
+  .check input{width:auto}
+
+  .row{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-top:4px}
+  button{font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;padding:9px 14px;border-radius:8px;border:1px solid transparent}
+  .btn-primary{background:var(--navy-800);color:#fff}
+  .btn-primary:hover{background:var(--navy-700)}
+  .btn-ghost{background:#fff;color:var(--navy-800);border-color:var(--line)}
+  .btn-ghost:hover{border-color:var(--grey-2)}
+  .nav{display:flex;gap:4px}
+  .nav button{padding:9px 11px;font-family:var(--mono)}
+  .btn-sm{padding:5px 11px;font-size:12px}
+  .file-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--grey)}
+  .file-tag{font-family:var(--mono);font-size:12px;color:var(--navy-800);background:#eef2f8;border:1px solid var(--line);border-radius:6px;padding:3px 8px}
+
+  .status{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .badge{font-size:19px;font-weight:750;letter-spacing:.02em;color:#fff;padding:11px 18px;border-radius:10px;min-width:158px;text-align:center}
+  .badge small{display:block;font-size:11px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;opacity:.9;margin-top:2px}
+  .b-visible{background:var(--vis)} .b-security{background:var(--sec);color:#3a2c00}
+  .b-notvisible{background:var(--nov)} .b-none{background:var(--none)} .b-bright{background:var(--bright)}
+  .badges{display:flex;gap:12px;flex-wrap:wrap}
+  .badge-col{display:flex;flex-direction:column;gap:5px}
+  .badge-cap{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--grey-2);font-weight:700;padding-left:2px}
+  .readout{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:10px 18px;flex:1;min-width:260px}
+  .ro{display:flex;flex-direction:column}
+  .ro .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--grey-2)}
+  .ro .v{font-family:var(--mono);font-size:16px;color:var(--ink);font-weight:600}
+  .clock{margin-top:12px;font-family:var(--mono);font-size:12.5px;color:var(--grey);letter-spacing:.01em}
+  .clock b{color:var(--ink);font-weight:600}
+
+  .countdown{margin-top:12px;display:flex;align-items:center;gap:30px;flex-wrap:wrap;
+             background:linear-gradient(135deg,var(--navy-900),var(--navy-700));color:#fff;border-radius:10px;padding:12px 18px}
+  .cd-item{display:flex;flex-direction:column;gap:1px}
+  .cd-label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .cd-value{font-family:var(--mono);font-size:24px;font-weight:700;letter-spacing:.01em}
+  .cd-value.neg{color:#f2b4ab}
+  .prec-box{font-family:var(--mono);font-size:12px;color:var(--grey);padding-bottom:4px;line-height:1.5}
+  .prec-box .pb-k{color:var(--grey-2);text-transform:uppercase;font-size:9.5px;letter-spacing:.08em}
+  .prec-box .pb-arrow{color:var(--gold);margin:0 6px;font-weight:700}
+  .prec-box .pb-d{color:var(--ink);font-weight:600;margin-left:8px}
+  .cd-note{font-size:12px;color:#b9c6d6;margin-left:auto}
+
+  .vis-summary{font-size:14.5px;margin:0 0 14px;color:var(--ink)}
+  .vis-summary b{font-family:var(--mono)}
+  .win-list{list-style:none;margin:0 0 16px;padding:0;font-size:14px}
+  .win-list li{display:flex;align-items:center;gap:10px;padding:4px 0}
+  .win-list li.dim{opacity:.6}
+  .dot{width:11px;height:11px;border-radius:3px;flex:0 0 auto}
+  .win-list .t{font-family:var(--mono);font-weight:600;min-width:150px}
+  .win-list .t sup{color:var(--grey-2);font-weight:600;font-size:9px}
+  .win-list .lab{color:var(--grey);font-size:12.5px;flex:1}
+  .win-list .dur{font-family:var(--mono);color:var(--grey-2);font-size:12px}
+
+  .am-wrap{position:relative}
+  canvas{width:100%;display:block}
+  #timeline{height:44px}
+  #amOverlay{position:absolute;left:0;top:0;pointer-events:none}
+  #amTip{position:absolute;pointer-events:none;display:none;z-index:5;min-width:172px;
+         background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:8px;
+         box-shadow:0 4px 14px rgba(11,26,46,.16);padding:8px 10px;font-size:12px}
+  #amTip .h{font-weight:700;color:var(--ink);margin-bottom:4px;font-size:12.5px}
+  #amTip .r{display:flex;justify-content:space-between;gap:14px;color:var(--grey)}
+  #amTip .r b{font-family:var(--mono);color:var(--ink);font-weight:600}
+  #amTip hr{border:none;border-top:1px solid var(--line);margin:5px 0}
+  .tl-legend{display:flex;gap:14px;margin-top:10px;font-size:12px;color:var(--grey);flex-wrap:wrap}
+  .tl-legend span{display:inline-flex;align-items:center;gap:6px}
+
+  .notes{font-size:12px;color:var(--grey);line-height:1.6}
+  .notes b{color:var(--ink)}
+  .warn{background:#fff7e8;border:1px solid #f0d9a0;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#6b5310}
+  code{font-family:var(--mono);font-size:12px;background:#eef2f8;padding:1px 5px;border-radius:4px}
+
+  /* ---- top card: target + observatory ---- */
+  .top-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px 28px}
+  @media(max-width:860px){.top-grid{grid-template-columns:minmax(0,1fr)}}
+  .top-col > h2{margin:0 0 12px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--grey)}
+  .top-col + .top-col{border-left:1px solid var(--line);padding-left:28px}
+  @media(max-width:860px){.top-col + .top-col{border-left:0;padding-left:0;border-top:1px solid var(--line);padding-top:14px}}
+  .name-row{display:flex;gap:8px}
+  .name-row input{flex:1;min-width:0;font-size:15px;font-family:var(--sans)}
+  .name-msg{font-size:12.5px;color:var(--grey);margin-top:6px;min-height:18px}
+  .name-msg b{font-family:var(--mono);color:var(--ink);font-weight:600}
+  .name-msg.bad{color:var(--red)}
+  .lim-line{font-size:12px;color:var(--grey);margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .lim-line a{color:var(--navy-800);font-weight:600}
+  .date-row{display:flex;gap:6px;align-items:center}
+  .date-row input{flex:1;min-width:0}
+  details.site-adv{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
+  details.site-adv > summary{cursor:pointer;font-size:12.5px;color:var(--navy-800);font-weight:600}
+
+  /* ---- comparison field (s4field) ---- */
+  .tabs{display:inline-flex;background:#eef2f8;border-radius:9px;padding:3px;gap:2px}
+  .tabs button{background:transparent;color:var(--grey);padding:6px 16px;font-size:12.5px;border-radius:7px}
+  .tabs button.on{background:#fff;color:var(--navy-800);box-shadow:0 1px 2px rgba(11,26,46,.12)}
+  .fld-intro{font-size:13px;color:var(--grey);margin:12px 0 0;max-width:820px}
+  .fld-intro b{color:var(--ink)}
+  .dv-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:var(--grey)}
+  .dual{position:relative;flex:1 1 220px;max-width:420px;height:26px}
+  .dual input[type=range]{position:absolute;left:0;top:0;width:100%;height:26px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+  .dual input[type=range]::-webkit-slider-thumb{pointer-events:auto;-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--navy-800);border:2px solid #fff;box-shadow:0 0 0 1px var(--grey-2);cursor:pointer}
+  .dual input[type=range]::-moz-range-thumb{pointer-events:auto;width:13px;height:13px;border-radius:50%;background:var(--navy-800);border:2px solid #fff;box-shadow:0 0 0 1px var(--grey-2);cursor:pointer}
+  .dual input[type=range]::-moz-range-track{background:none}
+  .dual-track,.dual-fill{position:absolute;top:11px;height:4px;border-radius:2px}
+  .dual-track{left:0;right:0;background:var(--line)}
+  .dual-fill{background:var(--gold)}
+  .dv-val{font-family:var(--mono);color:var(--ink);font-weight:600;min-width:150px}
+  .nmax{width:72px;font-family:var(--mono);font-weight:600;text-align:center;padding:5px 6px}
+  .nmax-lab{flex-direction:row;color:var(--grey);font-size:12.5px}
+  .filt-basic{display:flex;align-items:center;gap:6px;margin-top:8px}
+  .filt-basic .check{margin-top:0}
+  .rec{font-size:10.5px;font-weight:700;color:var(--green);background:#e3f4ec;border-radius:5px;padding:1px 6px;margin-left:4px;letter-spacing:.02em}
+  fieldset.filt-adv{border:1px solid var(--line);border-radius:8px;margin:14px 0 0;padding:6px 12px 10px}
+  fieldset.filt-adv legend{font-size:12.5px;color:var(--grey);padding:0 4px;display:flex;align-items:center;gap:6px}
+  fieldset.filt-adv legend a{color:var(--navy-800);font-weight:600;font-size:12px}
+  .filt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:2px 14px}
+  .filt-grid .check{margin-top:4px}
+  .info-dark{color:var(--navy-800);border-color:var(--grey-2)}
+  .filt-help{font-size:12.5px;color:var(--ink);background:#f6f8fb;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:10px;line-height:1.55}
+  .filt-help table{width:100%;border-collapse:collapse;margin:8px 0;font-size:12px}
+  .filt-help th{text-align:left;color:var(--grey-2);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--line)}
+  .filt-help td{vertical-align:top;padding:4px 6px;border-bottom:1px solid #eef1f6}
+  .filt-help td:first-child{font-weight:600;white-space:nowrap}
+  @media(max-width:620px){.filt-help td:first-child{white-space:normal} .filt-help table{table-layout:fixed} .filt-help td,.filt-help th{word-break:break-word}}
+  .fld-stale{background:#eef2f8;border-radius:8px;padding:8px 12px;font-size:12.5px;color:var(--navy-800);margin-top:12px}
+  .card-head .sub-h{font-size:12px;color:var(--grey-2);font-weight:500;margin-left:8px;text-transform:none;letter-spacing:0}
+  .fld-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 14px}
+  .fld-grid .wide{grid-column:span 2}
+  @media(max-width:620px){.fld-grid .wide{grid-column:span 1}}
+  .texp{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  .texp input{width:100%;min-width:0;padding:8px 6px}
+  .fld-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+  .fld-when{font-size:12.5px;color:var(--grey);font-family:var(--mono)}
+  .fld-status{font-size:12.5px;color:var(--grey);margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .pill{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:6px;letter-spacing:.06em}
+  .pill.ok{background:#e3f4ec;color:var(--green)} .pill.bad{background:#fbe9e9;color:var(--red)}
+  .pill.wait{background:#eef2f8;color:var(--grey)}
+  .pill.off{background:#f1f1ef;color:var(--grey)}
+  .fld-out{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:18px;margin-top:14px}
+  @media(max-width:880px){.fld-out{grid-template-columns:minmax(0,1fr)}}
+  @media(max-width:520px){.fld-offset .cd-value{font-size:18px} .fld-offset .cd-item #fOffVal,.fld-offset .cd-item .cd-label{white-space:normal} .fld-offset .cd-item{min-width:0;max-width:100%}}
+  .fld-offset{display:flex;flex-wrap:wrap;gap:12px 30px;align-items:flex-end;
+              background:linear-gradient(135deg,var(--navy-900),var(--navy-700));color:#fff;border-radius:10px;padding:12px 18px}
+  .fld-offset .cd-value{font-size:22px}
+  .fld-offset small{display:block;font-family:var(--mono);font-size:11.5px;color:#b9c6d6}
+  .fld-offset .cd-coord{font-size:16px}
+  .fld-offset .cd-item{flex:0 1 auto}
+  .fld-offset .cd-label{white-space:nowrap}
+  .fld-offset #fOffVal{white-space:nowrap}
+  .copy-btn{font-family:var(--sans);font-size:10.5px;font-weight:600;padding:1px 7px;margin-left:6px;border-radius:5px;
+            background:rgba(255,255,255,.1);color:#dbe4ef;border:1px solid rgba(255,255,255,.18)}
+  .copy-btn:hover{background:rgba(255,255,255,.2)}
+  .info-btn{font-size:10.5px;font-weight:700;width:17px;height:17px;padding:0;margin-left:6px;border-radius:50%;line-height:15px;
+            background:transparent;color:var(--gold);border:1px solid var(--gold);vertical-align:1px}
+  .tgt-list{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;font-size:12.5px}
+  .tgt-list .tl-k{color:var(--grey);margin-right:2px}
+  .tchip{display:inline-flex;align-items:stretch;border:1px solid var(--line);border-radius:999px;background:#fff;overflow:hidden}
+  .tchip button{font:inherit;border:0;background:none;cursor:pointer;color:var(--ink);padding:3px 4px 3px 10px;display:inline-flex;align-items:center;gap:6px}
+  .tchip button.tx{padding:3px 9px 3px 4px;color:var(--grey);font-size:14px;line-height:1}
+  .tchip button.tx:hover{color:var(--red)}
+  .tchip i{width:9px;height:9px;border-radius:50%;background:var(--c);display:inline-block}
+  .tchip.on{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c);font-weight:650}
+  .tgt-list .tl-add{font:inherit;font-size:12px;border:1px dashed var(--grey-2);border-radius:999px;background:none;color:var(--ink);padding:3px 10px;cursor:pointer}
+  .tgt-list .tl-clear{font:inherit;font-size:12px;border:0;background:none;color:var(--grey);text-decoration:underline;cursor:pointer;padding:2px 4px}
+  .tl-legend .tgt-leg{display:contents}
+  .tl-legend .leg-tgt{font:inherit;color:inherit;background:none;border:1px solid transparent;border-radius:999px;
+    padding:1px 8px 1px 6px;margin:-2px -4px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .tl-legend .leg-tgt:hover{border-color:var(--line);background:#f4f6fa}
+  .tl-legend .leg-tgt.on{font-weight:650;color:var(--ink);border-color:var(--line);background:#fff}
+  .cd-tsel{appearance:none;-webkit-appearance:none;font:600 11px var(--sans,inherit);letter-spacing:.12em;text-transform:uppercase;
+    color:var(--gold);background:rgba(226,161,35,.10) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23E2A123' stroke-width='1.6'/%3E%3C/svg%3E") no-repeat right 8px center;
+    border:1px solid rgba(226,161,35,.55);border-radius:6px;padding:3px 26px 3px 8px;cursor:pointer;max-width:260px;align-self:flex-start;margin-bottom:2px}
+  .cd-tsel:hover,.cd-tsel:focus{background-color:rgba(226,161,35,.2);outline:none}
+  .cd-tsel option{color:#0F172A;background:#fff;text-transform:none;letter-spacing:0}
+  .tl-legend i.ln{display:inline-block;width:16px;height:0;border-top:2px solid;vertical-align:middle;margin-right:5px}
+  .tl-legend i.ln.dash{border-top-style:dashed}
+  .ftgt-lab{flex-direction:row;align-items:center;gap:8px;margin-right:6px}
+  .fov-row{gap:8px;flex-wrap:wrap}
+  .fov-row #fovSel{min-width:220px;max-width:340px}
+  .fov-msg{font-size:12px;color:var(--grey)}
+  .fov-msg.bad{color:var(--red)} .fov-msg.warn{color:#b7791f}
+  .fov-panel{margin:10px 0 2px;padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:#f8fafc;font-size:12.5px;color:var(--ink)}
+  .fov-facts{line-height:1.6}
+  .fov-note{margin:8px 0 0;color:var(--grey);font-size:12px;max-width:860px}
+  .fov-roles{border-collapse:collapse;margin-top:8px;font-size:12.5px}
+  .fov-roles th{text-align:left;color:var(--grey);font-weight:600;padding:3px 12px 3px 0;border-bottom:1px solid var(--line)}
+  .fov-roles td{padding:3px 12px 3px 0;border-bottom:1px solid var(--line)}
+  .fov-roles select{padding:2px 6px;font-size:12px}
+  .pa-wrap{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink)}
+  .pa-wrap input{width:76px}
+  .pa-wrap select{width:auto;padding:4px 8px}
+  .mos-row{gap:8px 18px;flex-wrap:wrap;align-items:flex-end}
+  .mos-lab{font-size:12.5px;color:var(--ink);gap:4px}
+  .mos-lab input{width:64px;padding:4px 7px}
+  #fOut.mos .fld-out{grid-template-columns:1fr}
+  #fOut.mos .fld-chart{max-width:660px}
+  .mos-grid{font-family:var(--mono);font-size:11px}
+  .mos-grid th:first-child,.mos-grid tr>th{min-width:1.6em}
+  .mos-grid td{text-align:center !important;line-height:1.35;padding:4px 6px;cursor:pointer;border:1px solid var(--line);white-space:nowrap}
+  .mos-grid th{text-align:center !important}
+  .mos-grid td:hover{outline:2px solid var(--gold);outline-offset:-2px}
+  .mos-grid td.mos-priority{background:#fff59d} .mos-grid td.mos-observed{background:#a5f3fc}
+  .mos-grid td.mos-done{background:#bbf7d0} .mos-grid td.mos-redo{background:#fecaca}
+  .fov-set{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px 18px;align-items:center}
+  .fov-set label{flex-direction:row;align-items:center;gap:5px;font-size:12.5px;color:var(--ink)}
+  .fov-set input{width:68px;padding:3px 6px}
+  .fov-set .fov-note{flex-basis:100%;margin:2px 0 0}
+  .fov-form .ff-title{margin-bottom:6px}
+  .fov-form .ff-row{display:flex;flex-wrap:wrap;gap:8px 18px;margin:6px 0}
+  .fov-form label{font-size:12px;gap:3px}
+  .fov-form input{width:120px;padding:4px 7px}
+  .fov-form .ff-pair{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink)}
+  .fov-form .ff-pair input{width:76px}
+  .fov-form select{min-width:200px;padding:4px 7px}
+  .ff-out{margin:8px 0 2px;font-family:var(--mono);font-size:12px;color:var(--navy-800)}
+  .ff-out.bad{color:var(--red)}
+  .ftgt-lab select{min-width:150px;max-width:260px}
+  .tip{position:relative;display:inline-flex;align-items:center}
+  .tip-box{display:none;position:absolute;top:calc(100% + 9px);left:-14px;z-index:20;width:min(350px,82vw);
+           background:var(--navy-900);color:#dfe7f0;font-size:12.5px;line-height:1.55;font-weight:400;text-align:left;
+           padding:10px 13px;border-radius:9px;box-shadow:0 8px 22px rgba(11,26,46,.28)}
+  .tip-box::before{content:"";position:absolute;top:-5px;left:21px;width:10px;height:10px;background:var(--navy-900);transform:rotate(45deg)}
+  .tip-box b{color:#fff} .tip-note{color:#b9c6d6;font-size:12px}
+  .tip:hover .tip-box,.tip:focus-within .tip-box,.tip.open .tip-box{display:block}
+  @media(max-width:620px){.tip-box{position:fixed;top:auto;bottom:12px;left:12px;right:12px;width:auto} .tip-box::before{display:none}}
+  .eta-help{font-size:12.5px;color:var(--ink);background:#f6f8fb;border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:8px;line-height:1.55}
+  table.comps.miss td.why{text-align:left;white-space:normal;font-family:var(--sans);font-size:12px;color:var(--grey)}
+  table.comps.miss th:last-child{text-align:left}
+  .fld-meta{font-size:12.5px;color:var(--grey);margin-top:8px;line-height:1.55}
+  .fld-meta b{color:var(--ink);font-family:var(--mono);font-weight:600}
+  .fld-warn{white-space:pre-wrap;font-family:var(--mono);font-size:11.5px;margin-top:10px}
+  .fld-err{background:#fbe9e9;border:1px solid #f0c2bd;border-radius:8px;padding:10px 12px;font-size:12.5px;color:#7a1f16;margin-top:12px}
+  .fld-chart{position:relative}
+  #fSvg{width:100%;aspect-ratio:1/1;display:block;background:#0b1424;border-radius:10px;touch-action:none;cursor:grab;user-select:none}
+  #fSvg.panning{cursor:grabbing}
+  #fOut.stale #fTable,#fOut.stale #fMiss,#fOut.stale .cd-item.dep{opacity:.35;transition:opacity .12s}
+  #fSvg .drag-field{cursor:move} #fSvg .drag-guider{cursor:alias}
+  .fld-guide{font-size:12.5px;color:var(--grey);margin-top:8px;line-height:1.5}
+  .fld-guide b{font-family:var(--mono);color:var(--ink)}
+  .fld-help{font-size:11.5px;color:var(--grey-2);margin-top:6px}
+  .fld-help b{color:var(--grey)}
+  .fld-offset .manual{color:#fbd38d}
+  .fld-views{display:flex;gap:4px;margin-bottom:6px;align-items:center;flex-wrap:wrap}
+  .fld-views button{white-space:nowrap}
+  .fld-views .note{margin-left:auto;font-size:11px;color:var(--grey-2)}
+  .fld-views button.on{background:var(--navy-800);color:#fff}
+  table.comps{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:12px}
+  table.comps th{font-size:11px;letter-spacing:.02em;color:var(--grey-2);font-weight:600;text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+  table.comps td{font-family:var(--mono);text-align:right;padding:4px 5px;border-bottom:1px solid #eef1f6;white-space:nowrap}
+  table.comps th:first-child,table.comps td:first-child,table.comps th:nth-child(2),table.comps td:nth-child(2){text-align:left}
+  table.comps tr.tgt td{color:var(--gold);font-weight:700}
+  .tbl-wrap{overflow-x:auto}
+  details.rep summary{cursor:pointer;font-size:12.5px;color:var(--navy-800);font-weight:600;margin-top:12px}
+  details.rep pre{font-family:var(--mono);font-size:11px;line-height:1.4;background:#f6f8fb;border:1px solid var(--line);border-radius:8px;padding:10px;overflow-x:auto;max-height:520px}
+</style>
+</head>
+<body>
+
+<header>
+  <img class="logo" src="assets/skybound-mark.svg" alt="">
+  <div class="divider"></div>
+  <div class="titles">
+    <div class="eyebrow">General Telescope Visibility Calculator</div>
+    <h1>Sky<span class="lt">Bound</span></h1>
+    <div class="sub">Where the mount can go — <em>anytime, anywhere</em>.</div>
+  </div>
+  <div class="hdr-right">
+    <div class="ver">v0.20.1</div>
+    <div class="sig">By <strong>Cleber Silva</strong> · UFC/MALTED · <a href="https://github.com/cleber-si/skybound" target="_blank" rel="noopener">source</a></div>
+  </div>
+</header>
+
+<main>
+
+  <section class="card" id="targetCard">
+    <div class="top-grid">
+      <div class="top-col">
+        <h2>Target</h2>
+        <label>Name
+          <span class="hint">a star, exoplanet host, TOI or Gaia DR3 ID (s4field helper, else online, else the reference tables) · or type RA/Dec below</span>
+          <span class="name-row">
+            <input type="text" id="tName" placeholder="e.g. AU Mic, HD 10038, TOI-2631" autocomplete="off">
+            <button class="btn-primary" id="tFind" type="button">Find</button>
+          </span>
+        </label>
+        <div class="name-msg" id="tMsg"></div>
+        <div class="grid g-target" style="margin-top:10px">
+          <label>Right ascension (J2000)
+            <span class="hint"><code>18 11 58.10</code> · <code>18:11:58</code> · <code>18.199</code> h</span>
+            <input type="text" id="ra" placeholder="hh mm ss.s" autocomplete="off">
+          </label>
+          <label>Declination (J2000)
+            <span class="hint"><code>-14 56 08.99</code> · <code>-14:56:09</code> · <code>-14.936</code>°</span>
+            <input type="text" id="dec" placeholder="±dd mm ss" autocomplete="off">
+          </label>
+        </div>
+        <div class="prec-box" id="precBox" style="margin-top:8px"></div>
+        <div class="tgt-list" id="tgtList" hidden></div>
+      </div>
+      <div class="top-col">
+        <h2>Observatory &amp; night</h2>
+        <label>Telescope
+          <select id="scope"></select>
+        </label>
+        <div class="lim-line">pointing limits: <span class="file-tag" id="limName">placeholder (built-in)</span>
+          <a href="#" id="openSite">change</a></div>
+        <label style="margin-top:10px">Date &amp; time at the site
+          <span class="date-row">
+            <span class="nav">
+              <button class="btn-ghost" id="prevMon" type="button" title="previous month">&laquo;</button>
+              <button class="btn-ghost" id="prevDay" type="button" title="previous night">&lsaquo;</button>
+            </span>
+            <input type="datetime-local" id="when" step="1">
+            <span class="nav">
+              <button class="btn-ghost" id="nextDay" type="button" title="next night">&rsaquo;</button>
+              <button class="btn-ghost" id="nextMon" type="button" title="next month">&raquo;</button>
+            </span>
+          </span>
+        </label>
+        <div class="row" style="margin-top:10px">
+          <label style="flex:1;min-width:190px">Dark enough when the Sun is below
+            <select id="darkLimit">
+              <option value="-18">−18° · astronomical night (faint targets)</option>
+              <option value="-12">−12° · nautical twilight</option>
+              <option value="-6">−6° · civil twilight</option>
+              <option value="0">0° · Sun below horizon (bright targets)</option>
+            </select>
+          </label>
+          <button class="btn-ghost" id="nowBtn" type="button">Now</button>
+          <button class="btn-primary" id="calcBtn" type="button">Compute</button>
+        </div>
+      </div>
+    </div>
+
+    <details class="site-adv" id="siteAdv">
+      <summary>Site coordinates, pointing limits &amp; coordinate reduction</summary>
+      <div class="grid g-site" style="margin-top:12px">
+        <label>Latitude (°, S negative)<input type="number" id="lat" value="-22.53444" step="0.00001"></label>
+        <label>Longitude (°, W negative)<input type="number" id="lon" value="-45.5825" step="0.00001"></label>
+        <label>Altitude (m)<input type="number" id="alt" value="1864" step="1"></label>
+      </div>
+      <div class="grid g-target" style="margin-top:12px">
+        <label>Coordinate reduction
+          <select id="reduce">
+            <option value="prec" selected>Precession only (mean place of date)</option>
+            <option value="full">Full apparent place (+ nutation, aberration)</option>
+            <option value="none">None — input is already of date</option>
+          </select>
+        </label>
+        <label>Azimuth convention (for the limits CSV &amp; display)
+          <select id="azconv">
+            <option value="NE">North, increasing toward East (standard)</option>
+            <option value="NW">North, increasing toward West</option>
+            <option value="SW">South, increasing toward West</option>
+            <option value="SE">South, increasing toward East</option>
+          </select>
+        </label>
+      </div>
+      <div class="row" style="margin-top:14px">
+        <div class="file-row">
+          <button class="btn-ghost" id="csvBtn" type="button">Load limits CSV…</button>
+          <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
+          <span>active:</span><span class="file-tag" id="csvName">placeholder (built-in)</span>
+          <button class="btn-ghost" id="csvReset" type="button">Reset to placeholder</button>
+          <button class="btn-ghost" id="csvTemplate" type="button">Download template</button>
+        </div>
+      </div>
+      <div class="warn" style="margin-top:12px">
+        The built-in limits are a <b>placeholder</b>, not a real telescope limit table — every observatory handles pointing
+        differently. Download the template, enter <b>your</b> altitude/zenith limits per azimuth sector, and load it here.
+        Columns: <code>azimute_from, azimute_to, zenit_angle_max, zenit_angle_security, zenit_angle_free</code> (degrees,
+        zenith angle zero at the zenith); set the azimuth convention above to match your CSV. Sectors left at ZA ≥ 85°
+        are treated as <b>unmeasured</b> — the tool will report “no limit data” there rather than a false limit.
+      </div>
+    </details>
+  </section>
+
+  <section class="card">
+    <h2>Status now</h2>
+    <div class="status">
+      <div class="badges">
+        <div class="badge-col"><div class="badge-cap">Mount · pointing</div>
+          <div class="badge b-none" id="ptBadge">—<small id="ptSub">enter a target</small></div></div>
+        <div class="badge-col"><div class="badge-cap">Sky · darkness</div>
+          <div class="badge b-none" id="skyBadge">—<small id="skySub"></small></div></div>
+      </div>
+      <div class="readout" id="readout"></div>
+    </div>
+    <div class="clock" id="clock"></div>
+    <div class="countdown">
+      <div class="cd-item"><span class="cd-label" id="cdLabelA">Time to limit</span><span class="cd-value" id="cdA">—</span></div>
+      <div class="cd-item"><span class="cd-label" id="cdLabelB">Observable in</span><span class="cd-value" id="cdB">—</span></div>
+      <span class="cd-note" id="cdNote"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-head">
+      <h2>Visibility<span class="vis-date" id="visDate"></span></h2>
+      <button class="btn-ghost btn-sm" id="toggleWins" type="button" aria-controls="windows" aria-expanded="false">Show list</button>
+    </div>
+    <p class="vis-summary" id="summary"></p>
+    <ul class="win-list" id="windows" style="display:none"></ul>
+    <canvas id="timeline" height="44"></canvas>
+    <div class="am-wrap">
+      <canvas id="airmass"></canvas>
+      <canvas id="amOverlay"></canvas>
+      <div id="amTip"></div>
+    </div>
+    <div class="tl-legend">
+      <span><i class="dot" style="background:var(--vis)"></i>Pointable</span>
+      <span><i class="dot" style="background:var(--sec)"></i>Security zone</span>
+      <span><i class="dot" style="background:var(--nov)"></i>Not visible</span>
+      <span><i class="dot" style="background:var(--none)"></i>No limit data</span>
+      <span><i class="dot" style="background:rgba(120,135,158,.55)"></i>not dark (overlay)</span>
+    </div>
+    <div class="tl-legend">
+      <span class="tgt-leg" id="amTgtLegend"><span><i class="dot" style="background:var(--sky)"></i>Target</span></span>
+      <span><i class="dot" style="background:var(--moon)"></i>Moon</span>
+      <span><i class="ln" style="border-color:#e8833a"></i>sunset · sunrise</span>
+      <span><i class="ln dash" style="border-color:#8a9bc0"></i>dusk · dawn (dark limit)</span>
+      <span><i class="dot" style="background:#0e1f33"></i>Night / twilight</span>
+      <span><i class="dot" style="background:#6078d2"></i>Moonlight</span>
+      <span style="margin-left:auto">click a target's name to select it · hover for a readout · now &#9650;</span>
+    </div>
+  </section>
+
+  <section class="card" id="fieldCard">
+    <div class="card-head">
+      <h2 id="fCardTitle">Comparison field<span class="sub-h" id="fHead">SPARC4 · OPD 1.6 m</span></h2>
+      <button class="btn-ghost btn-sm" id="toggleField" type="button">Hide</button>
+    </div>
+    <div id="fieldBody">
+      <div class="row fov-row" style="margin-top:0;align-items:center">
+        <span class="tabs" role="tablist" id="fModeSw" style="margin-right:6px">
+          <button type="button" id="fMField" class="on" role="tab" title="the pointing and its comparison stars">Field</button>
+          <button type="button" id="fMMosaic" role="tab" title="tiles covering an area">Mosaic</button>
+        </span>
+        <label class="ftgt-lab">Instrument
+          <select id="fovSel" aria-label="instrument field of view"></select>
+        </label>
+        <button class="btn-ghost btn-sm" id="fovLoad" type="button" title="an Aladin instrument FoV file (XML / VOTable) or a SkyBound FoV (JSON)">Load FoV…</button>
+        <button class="btn-ghost btn-sm" id="fovNewBtn" type="button" title="a rectangular detector from its pixels, pixel size and the telescope's focal length">New FoV…</button>
+        <input type="file" id="fovFile" accept=".xml,.vot,.votable,.json,text/xml,application/xml,application/json" hidden>
+        <button class="btn-ghost btn-sm" id="fovInfoBtn" type="button" aria-expanded="false" aria-controls="fovPanel">About…</button>
+        <span class="fov-msg" id="fovMsg"></span>
+      </div>
+      <div class="fov-panel" id="fovNew" hidden></div>
+      <div class="fov-panel" id="fovPanel" hidden></div>
+      <div class="row" style="align-items:center">
+        <label class="ftgt-lab">Target
+          <select id="fTarget" disabled><option value="">no target yet</option></select>
+        </label>
+        <span class="tabs" role="tablist" id="fTabs">
+          <button type="button" id="fTabBasic" class="on" role="tab">Basic</button>
+          <button type="button" id="fTabAdv" role="tab">Advanced</button>
+        </span>
+        <label style="flex-direction:row;align-items:center;gap:8px;margin-left:8px" id="fModeLab">Mode
+          <select id="fMode"><option value="phot">photometric</option><option value="polar">polarimetric</option></select>
+        </label>
+        <span class="tip" id="fModeTipWrap">
+          <button type="button" class="info-btn info-dark" id="fModeBtn" aria-describedby="fModeTip" aria-expanded="false">?</button>
+          <span class="tip-box" role="tooltip" id="fModeTip">
+            <b>Photometric:</b> no polarization optics in the beam. Each star makes one image in each of g, r, i and z.<br>
+            <b>Polarimetric:</b> a waveplate (λ/2 or λ/4) and the Savart analyser go into the beam. Each star makes
+            <b>two images</b>, 13.8″ apart at PA 208° (towards the south-west), each with half the flux, and you observe a
+            sequence of waveplate positions.<br>
+            <span class="tip-note">For the comparison field, both images must be isolated and inside the edge margin, so fewer stars qualify.</span>
+          </span>
+        </span>
+        <span class="pa-wrap" id="fPaWrap" hidden>
+          <label for="fPa">Field PA</label>
+          <input type="number" id="fPa" value="0" step="1" min="-360" max="360" inputmode="decimal" title="position angle of the FoV, east of north">
+          <span>°</span>
+          <button class="btn-ghost btn-sm" id="fPaZero" type="button" title="north up">N up</button>
+          <span id="fBandWrap" style="display:inline-flex;align-items:center;gap:6px;margin-left:10px"><label for="fBand">Band</label>
+          <select id="fBand" title="the band the comparison stars are matched in (Gaia DR3: synthetic V, g, r, i, z, or G)">
+            <option value="V">V</option><option value="G">G (Gaia)</option><option value="g">g</option><option value="r">r</option><option value="i">i</option><option value="z">z</option>
+          </select></span>
+        </span>
+        <button class="btn-primary" id="fGo" type="button">Find field</button>
+      </div>
+      <p class="fld-intro" id="fGenIntro" hidden>Finds the pointing whose comparison stars are <b>closest in brightness to the
+        target</b> in the chosen band, within the ΔV window below, with Gaia quality, isolation and edge checks on this
+        instrument's detector(s) (s4field basic mode: no exposure model). Drag the field to try another pointing, turn it with
+        <b>Field PA</b> (0° = the FoV's y axis to the north). Edge margin, isolation, a polarimeter's second image and the
+        guide-star range are under <b>Regions…</b>.</p>
+      <div class="row mos-row" id="fMosRow" hidden>
+        <label class="mos-lab">Tiles <span class="ff-pair"><input type="number" id="fMosCols" min="1" max="30" step="1" value="3" aria-label="columns">
+          × <input type="number" id="fMosRows" min="1" max="30" step="1" value="3" aria-label="rows"></span></label>
+        <label class="mos-lab">Overlap <span class="ff-pair"><input type="number" id="fMosOv" min="-100" max="90" step="1" value="15"> %</span></label>
+        <label class="mos-lab">or an area of <span class="ff-pair"><input type="number" id="fMosW" min="0" step="0.5" aria-label="width, arcmin">
+          × <input type="number" id="fMosH" min="0" step="0.5" aria-label="height, arcmin"> ′</span></label>
+        <button class="btn-ghost btn-sm" id="fMosCenter" type="button" title="the mosaic back on the target">Center</button>
+      </div>
+      <p class="fld-intro" id="fMosIntro" hidden>Tiles of this instrument's science area cover an area around the target, with
+        the overlap you choose, turned with <b>Field PA</b>. Drag the mosaic on the sky to move it, click a tile (or a cell of the
+        table) to change its status, and copy the table into the observing log. The statuses are kept in this browser, per target
+        and instrument.</p>
+      <div class="dv-row" id="fDvRow">
+        <span class="dv-lab">Comparison stars from ΔV =</span>
+        <span class="dual" id="fDual">
+          <span class="dual-track"></span><span class="dual-fill" id="fDvFill"></span>
+          <input type="range" id="fDvMin" min="-3" max="12" step="0.05" value="-0.35" aria-label="ΔV, brightest allowed">
+          <input type="range" id="fDvMax" min="-3" max="12" step="0.05" value="8" aria-label="ΔV, faintest allowed">
+        </span>
+        <span class="dv-val" id="fDvVal"></span>
+        <button class="btn-ghost btn-sm" id="fDvReset" type="button" title="back to −0.35 … +8 mag">default</button>
+      </div>
+      <div class="dv-row" id="fMaxRow">
+        <label class="dv-lab nmax-lab" for="fMaxComps">Comparison stars: at most</label>
+        <input type="number" id="fMaxComps" class="nmax" min="0" max="999" step="1" value="6" inputmode="numeric"
+               aria-describedby="fMaxHint">
+        <span id="fMaxHint">the ones that add most weight; the field is chosen for them · <b>0</b> = every star that qualifies</span>
+        <button class="btn-ghost btn-sm" id="fMaxReset" type="button" title="back to 6">default</button>
+      </div>
+      <p class="fld-intro" id="fIntroBasic">Finds the SPARC4 pointing whose comparison stars are <b>closest in brightness to the target</b>
+        within the ΔV window above, keeping Gaia quality, isolation and edge checks.
+        No exposure times, time of night or sky conditions — use <b>Advanced</b> for those.</p>
+      <div class="filt-basic" id="fBasicFilt">
+        <label class="check"><input type="checkbox" id="fFiltAll" checked> Apply the quality, isolation and edge filters <span class="rec">recommended</span></label>
+        <button type="button" class="info-btn info-dark" id="fFiltBtn" title="What do the filters do?">?</button>
+      </div>
+      <div id="fAdvPane" hidden>
+        <p class="fld-intro">Full noise model: exposure times (estimated if left empty), seeing, sky, Moon and the airmass at the chosen time.</p>
+        <div class="fld-grid" style="margin-top:12px">
+          <label>Read-out area
+            <select id="fSize"><option>LARGE</option><option>MEDIUM</option><option>SMALL</option></select>
+          </label>
+          <label>Acquisition
+            <select id="fAcq"><option>NORMAL FAINT</option><option>NORMAL BRIGHT</option><option>SLOW FAINT</option><option>SLOW BRIGHT</option></select>
+          </label>
+          <label class="wide">Exposure g · r · i · z [s]
+            <span class="hint">all four, or leave empty to estimate</span>
+            <span class="texp"><input type="text" id="fTg" inputmode="decimal" placeholder="g"><input type="text" id="fTr" inputmode="decimal" placeholder="r"><input type="text" id="fTi" inputmode="decimal" placeholder="i"><input type="text" id="fTz" inputmode="decimal" placeholder="z"></span>
+          </label>
+          <label>Seeing, typical [″]<input type="number" id="fFwhm" value="2.5" step="0.1" min="0.5"></label>
+          <label>Best / defocused [″]<input type="number" id="fFwhmBest" value="1.2" step="0.1" min="0.5"></label>
+          <label>Sky
+            <select id="fSky"><option value="photometric">photometric</option><option value="good">good</option><option value="regular">regular</option></select>
+          </label>
+          <label>Moon
+            <select id="fMoon"><option value="auto">auto</option><option value="new">new</option><option value="quarter">quarter</option><option value="full">full</option></select>
+          </label>
+          <label>Airmass &amp; epoch from
+            <select id="fWhen"><option value="planned">a planned time</option><option value="cursor">the date &amp; time above</option></select>
+          </label>
+          <label>Planned time (local)
+            <span class="hint">default: the target's highest point in the dark</span>
+            <input type="time" id="fTime">
+          </label>
+        </div>
+        <fieldset class="filt-adv">
+          <legend>Filters <span class="rec">all on is recommended</span>
+            <button type="button" class="info-btn info-dark" id="fFiltBtn2" title="What do the filters do?">?</button>
+            <a href="#" id="fFiltOn">all</a> · <a href="#" id="fFiltOff">none</a></legend>
+          <div class="filt-grid">
+            <label class="check"><input type="checkbox" class="fFilt" value="ruwe" checked> Gaia RUWE &lt; 1.4</label>
+            <label class="check"><input type="checkbox" class="fFilt" value="variable" checked> not Gaia VARIABLE</label>
+            <label class="check"><input type="checkbox" class="fFilt" value="binary" checked> not a Gaia binary</label>
+            <label class="check"><input type="checkbox" class="fFilt" value="isolation" checked> isolated (no bright neighbour)</label>
+            <label class="check"><input type="checkbox" class="fFilt" value="radius" checked> within 7′ of the target</label>
+            <label class="check"><input type="checkbox" class="fFilt" value="edge" checked> 12″ from the channel edges</label>
+            <label class="check"><input type="checkbox" class="fFilt" value="colour" checked> weight by colour</label>
+            <label class="check"><input type="checkbox" class="fFilt" value="saturation" checked> below 70% of saturation</label>
+            <label class="check"><input type="checkbox" class="fFilt" value="noise" checked> noise ≤ 10× the target's</label>
+            <label class="check"><input type="checkbox" class="fFilt" value="trails" checked> off readout trails</label>
+          </div>
+        </fieldset>
+        <div class="fld-bar">
+          <label class="check" style="margin-top:0"><input type="checkbox" id="fAuto" checked> recompute when the time changes</label>
+          <span class="fld-when" id="fWhenNote"></span>
+        </div>
+      </div>
+      <div class="filt-help" id="fFiltHelp" hidden>
+        <b>How comparison stars are chosen.</b> A star must lie in the <b>ΔV window</b> above (V<sub>comp</sub> − V<sub>target</sub>,
+        always applied) and pass every filter that is on. The pointing is then the one with the lowest noise penalty η.
+        With no filter on, only the ΔV window and the magnitudes decide.
+        <table>
+          <tr><th>Filter</th><th>Rejects a star when…</th><th>Why</th></tr>
+          <tr><td>Gaia RUWE</td><td>RUWE ≥ 1.4 (Gaia's astrometric fit is poor)</td><td>Often an unresolved binary, a companion closer than ~1″ or a blend. Photometry is usually fine if nothing varies: switch off to use such stars, then check their light curves.</td></tr>
+          <tr><td>Gaia VARIABLE</td><td>Gaia flags it as variable</td><td>A variable comparison puts its variability into the target's light curve.</td></tr>
+          <tr><td>Gaia binary</td><td>Gaia lists it as a non-single star (astrometric, spectroscopic or eclipsing binary)</td><td>Eclipsing and ellipsoidal binaries vary.</td></tr>
+          <tr><td>Isolation</td><td>A neighbour brighter than its own G + 5 mag lies within 3 × the typical seeing (7.5″ at 2.5″); in polarimetric mode, either image</td><td>A neighbour 5 mag fainter adds under 1% to the aperture; a brighter one spoils it, and seeing changes make that vary.</td></tr>
+          <tr><td>Search radius</td><td>More than 7′ from the target</td><td>Keeps the comparisons close, where transparency and airmass match the target's.</td></tr>
+          <tr><td>Edge margin</td><td>Closer than 12″ to a channel's edge (both images in polarimetric mode). Off: anywhere on the detector. Applies to the target too.</td><td>Room for the aperture and sky annulus, and for small pointing errors.</td></tr>
+          <tr><td>Colour weight</td><td>Never rejects: weight 1, 0.5 or 0.25 for |Δ(BP−RP)| ≤ 0.3, ≤ 0.5 or more. Off: every star weighs 1.</td><td>Colour differences leave an airmass trend in the light curve (mostly in g).</td></tr>
+          <tr><td>Saturation <i>(Advanced)</i></td><td>Its peak exceeds 70% of saturation at the best seeing, with your exposure times</td><td>Non-linear or saturated stars ruin the ratio.</td></tr>
+          <tr><td>Noise <i>(Advanced)</i></td><td>Its noise per exposure exceeds 10 × the target's</td><td>Beyond that a star adds under 1% of a target-like weight.</td></tr>
+          <tr><td>Readout trails <i>(Advanced)</i></td><td>Another star's charge trail during readout adds more than 1% to it (r: columns; i, z: rows; g: both)</td><td>SPARC4 reads out with the shutter open; the trail depends on the exposure time.</td></tr>
+        </table>
+        Basic uses the first seven; the last three need exposure times. Basic's default window (−0.35 to +8 mag) replaces
+        saturation and noise: a star 0.35 mag brighter than a target at 50% of saturation stays under 70%, and the full model
+        has used comparisons up to 8 mag fainter.
+      </div>
+      <div class="fld-status" id="fStatus"><span class="pill wait">…</span><span>checking the s4field helper</span></div>
+      <div id="fError"></div>
+      <div id="fStale"></div>
+      <div id="fOut" hidden>
+        <div id="fSummary" style="margin-top:14px"></div>
+        <div class="fld-out">
+          <div class="fld-chart">
+            <div class="fld-views">
+              <button class="btn-ghost btn-sm on" id="fViewField" type="button">Field</button>
+              <button class="btn-ghost btn-sm" id="fViewGuider" type="button">With guider</button>
+              <button class="btn-ghost btn-sm" id="fZoomIn" type="button" title="zoom in">+</button>
+              <button class="btn-ghost btn-sm" id="fZoomOut" type="button" title="zoom out">−</button>
+              <button class="btn-ghost btn-sm" id="fReset" type="button" title="back to the recommended pointing and guide star" hidden>Recommended</button>
+              <span class="note" id="fImgNote">DSS2 red (STScI) · N up, E left</span>
+            </div>
+            <svg id="fSvg" xmlns="http://www.w3.org/2000/svg"><g id="fLayImg"></g><g id="fLay"></g></svg>
+            <div class="fld-guide" id="fGuide"></div>
+            <div class="tl-legend" id="fLegend"></div>
+            <div class="fld-help" id="fHelp">Drag the sky to pan, scroll or use +/− to zoom, double-click to recentre.
+              Drag the <b>gold field</b> to try another pointing (it is scored when you let go), and the <b>blue box</b> around the
+              circle to choose the guide star.</div>
+          </div>
+          <div>
+            <div id="fMeta"></div>
+            <div class="tbl-wrap"><table class="comps" id="fTable"></table></div>
+            <div class="tbl-wrap" id="fMiss"></div>
+            <div class="fld-bar">
+              <button class="btn-ghost btn-sm" id="fCsv" type="button">Download star list (CSV)</button>
+            </div>
+            <div id="fNotes"></div>
+            <details class="rep" id="fRepWrap"><summary>Full s4field report</summary><pre id="fReport"></pre></details>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Assumptions</h2>
+    <div class="notes">
+      <b>Limits are yours to supply.</b> SkyBound computes the sky for any site; the pointing limits live entirely in the
+      CSV you load. Unmeasured azimuths (ZA ≥ 85°) are reported as <b>“no limit data”</b> rather than a false limit.<br>
+      <b>Refraction.</b> Site pressure is derived from the selected altitude (≈ 809 hPa at 1864 m); temperature assumed 10 °C.<br>
+      <b>Observable = pointable + dark.</b> "Dark" uses the Sun-altitude threshold chosen above (default astronomical night, −18°).<br>
+      <b>Coordinate reduction.</b> Default is <em>precession only</em> (IAU 1976), the mean place of date that mount control systems apply — arcsecond-accurate and shown explicitly (J2000 → of date + offset). Full apparent place (adding nutation and aberration) and "none" are available in the dropdown.<br>
+      <b>Two timers.</b> <em>Time to limit</em> is the mount's pointing limit alone (comparable to a mount’s own time-to-limit, shown even in daylight); <em>Observable</em> folds in darkness.<br>
+      <b>Sun &amp; Moon.</b> Sun ≈ 0.01°; Moon from the full Meeus (ELP-2000) series, ≈ 1 arcmin.<br>
+      <b>Time.</b> Selected observatory's local civil time (fixed UTC offset). The chart runs local noon to noon.<br>
+      <b>Name lookup.</b> By <code>s4field</code> when it runs; without it, online from the browser (CDS Sesame; a Gaia DR3 ID from GAVO,
+      moved to epoch 2000), then the reference tables in <code>js/targets.js</code> (built by <code>tools/build_targets.py</code>; catalogue positions).
+      The message under the name says which source answered.<br>
+      <b>Comparison field.</b> Done by <code>s4field</code> (SPARC4 on the OPD 1.6 m), which runs on your computer: start it with
+      <code>python3 s4field/s4field.py --serve</code> from the SkyBound folder. It needs the network only the first time a target is used
+      (Gaia DR3 from the ESA archive, or GAVO's reduced copy when ESA is down); cones are then kept in <code>cones/</code>.
+      <i>Basic</i> ranks comparison stars by brightness alone (photon noise, within the ΔV window, default 0.35 mag brighter to 8 mag fainter than the target; no readout trails);
+      <i>Advanced</i> adds exposure times, seeing, sky, Moon and the airmass at the chosen time. The sky image is DSS2 red from STScI, decades older than Gaia: fast-moving stars sit
+      away from their markers, which show positions at the observing epoch.
+    </div>
+  </section>
+
+</main>
+
+<script>
+"use strict";
+const D2R=Math.PI/180, R2D=180/Math.PI;
+const norm360 = x => ((x % 360) + 360) % 360;
+const FF = getComputedStyle(document.body).fontFamily;
+const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+let DARK = -18;
+let NODATA_ZA = 85;   // sectors with ZA_max >= this are treated as unmeasured (no confident limit)
+let SITE_P = 810;     // site pressure (hPa), derived from altitude in render
+let CONV = "NE";      // azimuth convention for the CSV / display
+function azConv(azNE){  // convert internal North-through-East azimuth to the chosen convention
+  let a = azNE;
+  if(CONV==="NW") a=360-azNE;
+  else if(CONV==="SW") a=azNE+180;
+  else if(CONV==="SE") a=180-azNE;
+  return ((a%360)+360)%360;
+}
+function pressFromAlt(m){ if(!isFinite(m)) m=0; return 1013.25*Math.pow(Math.max(0.01,1-0.0065*m/288.15),5.255); }
+
+const PLACEHOLDER_CSV =
+`# SkyBound placeholder limits -- NOT a real telescope. Load your observatory's own CSV.
+azimute_from,azimute_to,zenit_angle_max,zenit_angle_security,zenit_angle_free
+0,45,58,52,45
+45,90,75,70,65
+90,135,75,70,65
+135,180,78,73,68
+180,225,78,73,68
+225,270,75,70,65
+270,315,75,70,65
+315,360,58,52,45`;
+
+const SITES=[
+ ["Brazil","OPD / LNA — Pico dos Dias (Perkin-Elmer 1.6 m)",-22.53444,-45.5825,1864,-180],
+ ["Chile","SOAR 4.1 m — Cerro Pachón",-30.2380,-70.7337,2713,-240],
+ ["Chile","Gemini South — Cerro Pachón",-30.2408,-70.7367,2722,-240],
+ ["Chile","ESO VLT — Cerro Paranal",-24.6275,-70.4044,2635,-240],
+ ["Chile","ESO 3.6 m — La Silla",-29.2543,-70.7346,2375,-240],
+ ["Chile","CTIO — Cerro Tololo",-30.1690,-70.8060,2200,-240],
+ ["Hawaii","Gemini North — Maunakea",19.8238,-155.4689,4213,-600],
+ ["Hawaii","Keck — Maunakea",19.8283,-155.4783,4160,-600],
+ ["Hawaii","Subaru — Maunakea",19.8255,-155.4761,4139,-600],
+ ["Other","Roque de los Muchachos — La Palma",28.7606,-17.8814,2396,0],
+ ["Other","SALT — Sutherland",-32.3758,20.8107,1798,120],
+ ["Other","AAT — Siding Spring",-31.2733,149.0644,1164,600],
+ ["Other","Apache Point — New Mexico",32.7803,-105.8203,2788,-420],
+ ["Other","Kitt Peak — Arizona",31.9583,-111.5967,2096,-420],
+ ["Other","Palomar — California",33.3564,-116.8650,1712,-480],
+];
+let siteTZ=-180;
+let SECTORS=[], liveMode=true, tickTimer=null, refreshTimer=null;
+let tA_ts=null, tA_label="Time to limit", tB_ts=null, tB_label="Observable in", lastCtx=null, plotGeom=null;
+
+/* ---- parsing ------------------------------------------------------------- */
+function parseAngle(raw){
+  if(raw==null) return NaN;
+  let s=String(raw).trim(); if(!s) return NaN;
+  let sign=1; s=s.replace(/^\+/,""); if(s[0]==="-"){ sign=-1; s=s.slice(1); }
+  const parts=s.split(/[\s:hmsd°'"]+/).filter(x=>x.length); if(!parts.length) return NaN;
+  const n=t=>parseFloat(t);
+  if(parts.length===1) return sign*n(parts[0]);
+  const a=n(parts[0])||0, b=parts[1]!=null?(n(parts[1])||0):0, c=parts[2]!=null?(n(parts[2])||0):0;
+  return sign*(a+b/60+c/3600);
+}
+const jdFromMs = ms => ms/86400000 + 2440587.5;
+const jdFromDate = d => jdFromMs(d.getTime());
+function gmstDeg(date){ const D=jdFromDate(date)-2451545.0, T=D/36525;
+  let g=280.46061837+360.98564736629*D+0.000387933*T*T-(T*T*T)/38710000; return norm360(g); }
+
+/* ---- time helpers -------------------------------------------------------- */
+const pad=n=>String(n).padStart(2,"0");
+const lp = ms => new Date(ms + siteTZ*60000);
+function fmtISO(ms){ const d=lp(ms);
+  return d.getUTCFullYear()+"-"+pad(d.getUTCMonth()+1)+"-"+pad(d.getUTCDate())+"T"+pad(d.getUTCHours())+":"+pad(d.getUTCMinutes())+":"+pad(d.getUTCSeconds()); }
+function parseISO(str){ const m=String(str).match(/(\d+)-(\d+)-(\d+)T(\d+):(\d+)(?::(\d+))?/);
+  if(!m) return Date.now(); return Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+(m[6]||0)) - siteTZ*60000; }
+const hmL = ms => { const d=lp(ms); return pad(d.getUTCHours())+":"+pad(d.getUTCMinutes()); };
+const clockL = ms => { const d=lp(ms); return pad(d.getUTCHours())+":"+pad(d.getUTCMinutes())+":"+pad(d.getUTCSeconds()); };
+const clockU = ms => { const d=new Date(ms); return pad(d.getUTCHours())+":"+pad(d.getUTCMinutes())+":"+pad(d.getUTCSeconds()); };
+function tzLabel(){ const s=siteTZ>=0?"+":"-", a=Math.abs(siteTZ); return "UTC"+s+pad(a/60|0)+(a%60?":"+pad(a%60):""); }
+
+/* ---- apparent place ------------------------------------------------------ */
+function nutation(T){
+  const Om=(125.04452-1934.136261*T)*D2R, L=(280.4665+36000.7698*T)*D2R, Lp=(218.3165+481267.8813*T)*D2R;
+  const dpsi=(-17.20*Math.sin(Om)-1.32*Math.sin(2*L)-0.23*Math.sin(2*Lp)+0.21*Math.sin(2*Om))/3600;
+  const deps=( 9.20*Math.cos(Om)+0.57*Math.cos(2*L)+0.10*Math.cos(2*Lp)-0.09*Math.cos(2*Om))/3600;
+  const eps0=23+26/60+21.448/3600-(46.8150*T+0.00059*T*T-0.001813*T*T*T)/3600;
+  return { dpsi, deps, eps0 };
+}
+function apparentPlace(ra0_h, dec0_deg, date){
+  const T=(jdFromDate(date)-2451545.0)/36525;
+  const z1=(2306.2181*T+0.30188*T*T+0.017998*T*T*T)/3600*D2R;
+  const z2=(2306.2181*T+1.09468*T*T+0.018203*T*T*T)/3600*D2R;
+  const th=(2004.3109*T-0.42665*T*T-0.041833*T*T*T)/3600*D2R;
+  const a0=ra0_h*15*D2R, d0=dec0_deg*D2R;
+  const A=Math.cos(d0)*Math.sin(a0+z1);
+  const B=Math.cos(th)*Math.cos(d0)*Math.cos(a0+z1)-Math.sin(th)*Math.sin(d0);
+  const C=Math.sin(th)*Math.cos(d0)*Math.cos(a0+z1)+Math.cos(th)*Math.sin(d0);
+  let a=Math.atan2(A,B)+z2, d=Math.asin(Math.max(-1,Math.min(1,C)));
+  const nut=nutation(T), eps=(nut.eps0+nut.deps)*D2R, dpsi=nut.dpsi*D2R, deps=nut.deps*D2R;
+  a += (Math.cos(eps)+Math.sin(eps)*Math.sin(a)*Math.tan(d))*dpsi-(Math.cos(a)*Math.tan(d))*deps;
+  d += (Math.sin(eps)*Math.cos(a))*dpsi+Math.sin(a)*deps;
+  const Dn=jdFromDate(date)-2451545.0, g=(357.528+0.9856003*Dn)*D2R;
+  const sunT=((280.460+0.9856474*Dn)+1.915*Math.sin(g)+0.020*Math.sin(2*g))*D2R;
+  const kap=(20.49552/3600)*D2R, ecc=0.016709, pi=(102.93735+1.71953*T)*D2R, ce=Math.cos(eps);
+  a += -kap*((Math.cos(a)*Math.cos(sunT)*ce+Math.sin(a)*Math.sin(sunT))/Math.cos(d))
+       +kap*ecc*((Math.cos(a)*Math.cos(pi)*ce+Math.sin(a)*Math.sin(pi))/Math.cos(d));
+  d += -kap*(Math.cos(sunT)*ce*(Math.tan(eps)*Math.cos(d)-Math.sin(a)*Math.sin(d))+Math.cos(a)*Math.sin(d)*Math.sin(sunT))
+       +kap*ecc*(Math.cos(pi)*ce*(Math.tan(eps)*Math.cos(d)-Math.sin(a)*Math.sin(d))+Math.cos(a)*Math.sin(d)*Math.sin(pi));
+  return { ra_h:norm360(a*R2D)/15, dec:d*R2D, eqeq:nut.dpsi*Math.cos(eps) };
+}
+function refraction(altTrueDeg){ if(altTrueDeg<-1) return 0;
+  const R=1.02/Math.tan((altTrueDeg+10.3/(altTrueDeg+5.11))*D2R); return (R*(SITE_P/1010))/60; }
+function lastDeg(date, ctx){ return norm360(gmstDeg(date)+ctx.lon+ctx.eqeq); }
+function observedAltAz(date, ctx){
+  const H=(lastDeg(date,ctx)-ctx.raApp*15)*D2R, dec=ctx.decApp*D2R, lat=ctx.lat*D2R;
+  const altTrue=Math.asin(Math.max(-1,Math.min(1,Math.sin(lat)*Math.sin(dec)+Math.cos(lat)*Math.cos(dec)*Math.cos(H))))*R2D;
+  const az=norm360(Math.atan2(-Math.cos(dec)*Math.sin(H),Math.sin(dec)*Math.cos(lat)-Math.cos(dec)*Math.sin(lat)*Math.cos(H))*R2D);
+  const altApp=altTrue+refraction(altTrue);
+  return { alt:altApp, altTrue, az, za:90-altApp, ha:((H*R2D+540)%360)-180 };
+}
+
+/* ---- Sun & Moon ---------------------------------------------------------- */
+function altOfRaw(raH,dec,date,lat,lon){ const dr=dec*D2R, la=lat*D2R, H=(norm360(gmstDeg(date)+lon)-raH*15)*D2R;
+  return Math.asin(Math.max(-1,Math.min(1,Math.sin(la)*Math.sin(dr)+Math.cos(la)*Math.cos(dr)*Math.cos(H))))*R2D; }
+function azOfRaw(raH,dec,date,lat,lon){ const dr=dec*D2R, la=lat*D2R, H=(norm360(gmstDeg(date)+lon)-raH*15)*D2R;
+  return norm360(Math.atan2(-Math.cos(dr)*Math.sin(H),Math.sin(dr)*Math.cos(la)-Math.cos(dr)*Math.sin(la)*Math.cos(H))*R2D); }
+function sunEqu(date){ const d=jdFromDate(date)-2451545.0;
+  const L=norm360(280.460+0.9856474*d), g=norm360(357.528+0.9856003*d)*D2R;
+  const lam=(L+1.915*Math.sin(g)+0.020*Math.sin(2*g))*D2R, eps=(23.439-3.6e-7*d)*D2R;
+  return { ra_h:norm360(Math.atan2(Math.cos(eps)*Math.sin(lam),Math.cos(lam))*R2D)/15, dec:Math.asin(Math.sin(eps)*Math.sin(lam))*R2D }; }
+const MTA=[[0,0,1,0,6288774,-20905355],[2,0,-1,0,1274027,-3699111],[2,0,0,0,658314,-2955968],[0,0,2,0,213618,-569925],[0,1,0,0,-185116,48888],[0,0,0,2,-114332,-3149],[2,0,-2,0,58793,246158],[2,-1,-1,0,57066,-152138],[2,0,1,0,53322,-170733],[2,-1,0,0,45758,-204586],[0,1,-1,0,-40923,-129620],[1,0,0,0,-34720,108743],[0,1,1,0,-30383,104755],[2,0,0,-2,15327,10321],[0,0,1,2,-12528,0],[0,0,1,-2,10980,79661],[4,0,-1,0,10675,-34782],[0,0,3,0,10034,-23210],[4,0,-2,0,8548,-21636],[2,1,-1,0,-7888,24208],[2,1,0,0,-6766,30824],[1,0,-1,0,-5163,-8379],[1,1,0,0,4987,-16675],[2,-1,1,0,4036,-12831],[2,0,2,0,3994,-10445],[4,0,0,0,3861,-11650],[2,0,-3,0,3665,14403],[0,1,-2,0,-2689,-7003],[2,0,-1,2,-2602,0],[2,-1,-2,0,2390,10056],[1,0,1,0,-2348,6322],[2,-2,0,0,2236,-9884],[0,1,2,0,-2120,5751],[0,2,0,0,-2069,0],[2,-2,-1,0,2048,-4950],[2,0,1,-2,-1773,4130],[2,0,0,2,-1595,0],[4,-1,-1,0,1215,-3958],[0,0,2,2,-1110,0],[3,0,-1,0,-892,3258],[2,1,1,0,-810,2616],[4,-1,-2,0,759,-1897],[0,2,-1,0,-713,-2117],[2,2,-1,0,-700,2354],[2,1,-2,0,691,0],[2,-1,0,-2,596,0],[4,0,1,0,549,-1423],[0,0,4,0,537,-1117],[4,-1,0,0,520,-1571],[1,0,-2,0,-487,-1739],[2,1,0,-2,-399,0],[0,0,2,-2,-381,-4421],[1,1,1,0,351,0],[3,0,-2,0,-340,0],[4,0,-3,0,330,0],[2,-1,2,0,327,0],[0,2,1,0,-323,1165],[1,1,-1,0,299,0],[2,0,3,0,294,0],[2,0,-1,-2,0,8752]];
+const MTB=[[0,0,0,1,5128122],[0,0,1,1,280602],[0,0,1,-1,277693],[2,0,0,-1,173237],[2,0,-1,1,55413],[2,0,-1,-1,46271],[2,0,0,1,32573],[0,0,2,1,17198],[2,0,1,-1,9266],[0,0,2,-1,8822],[2,-1,0,-1,8216],[2,0,-2,-1,4324],[2,0,1,1,4200],[2,1,0,-1,-3359],[2,-1,-1,1,2463],[2,-1,0,1,2211],[2,-1,-1,-1,2065],[0,1,-1,-1,-1870],[4,0,-1,-1,1828],[0,1,0,1,-1794],[0,0,0,3,-1749],[0,1,-1,1,-1565],[1,0,0,1,-1491],[0,1,1,1,-1475],[0,1,1,-1,-1410],[0,1,0,-1,-1344],[1,0,0,-1,-1335],[0,0,3,1,1107],[4,0,0,-1,1021],[4,0,-1,1,833],[0,0,1,-3,777],[4,0,-2,1,671],[2,0,0,-3,607],[2,0,2,-1,596],[2,-1,1,-1,491],[2,0,-2,1,-451],[0,0,3,-1,439],[2,0,2,1,422],[2,0,-3,-1,421],[2,1,-1,1,-366],[2,1,0,1,-351],[4,0,0,1,331],[2,-1,1,1,315],[2,-2,0,-1,302],[0,0,1,3,-283],[2,1,1,-1,-229],[1,1,0,-1,223],[1,1,0,1,223],[0,1,-2,-1,-220],[2,1,-1,-1,-220],[1,0,1,1,-185],[2,-1,-2,-1,181],[0,1,2,1,-177],[4,0,-2,-1,176],[4,-1,-1,-1,166],[1,0,1,-1,-164],[4,0,1,-1,132],[1,0,-1,-1,-119],[4,-1,0,-1,115],[2,-2,0,1,107]];
+function moonEqu(date){ const T=(jdFromDate(date)-2451545.0)/36525, DR=Math.PI/180;
+  let Lp=218.3164477+481267.88123421*T-0.0015786*T*T+T*T*T/538841-T*T*T*T/65194000;
+  let D=297.8501921+445267.1114034*T-0.0018819*T*T+T*T*T/545868-T*T*T*T/113065000;
+  let M=357.5291092+35999.0502909*T-0.0001536*T*T+T*T*T/24490000;
+  let Mp=134.9633964+477198.8675055*T+0.0087414*T*T+T*T*T/69699-T*T*T*T/14712000;
+  let F=93.2720950+483202.0175233*T-0.0036539*T*T-T*T*T/3526000+T*T*T*T/863310000;
+  const A1=119.75+131.849*T,A2=53.09+479264.290*T,A3=313.45+481266.484*T,E=1-0.002516*T-0.0000074*T*T;
+  let sl=0,sr=0,sb=0;
+  for(const r of MTA){ const arg=(r[0]*D+r[1]*M+r[2]*Mp+r[3]*F)*DR, e=Math.pow(E,Math.abs(r[1]));
+    sl+=r[4]*e*Math.sin(arg); sr+=r[5]*e*Math.cos(arg); }
+  for(const r of MTB){ const arg=(r[0]*D+r[1]*M+r[2]*Mp+r[3]*F)*DR, e=Math.pow(E,Math.abs(r[1]));
+    sb+=r[4]*e*Math.sin(arg); }
+  sl+=3958*Math.sin(A1*DR)+1962*Math.sin((Lp-F)*DR)+318*Math.sin(A2*DR);
+  sb+=-2235*Math.sin(Lp*DR)+382*Math.sin(A3*DR)+175*Math.sin((A1-F)*DR)+175*Math.sin((A1+F)*DR)+127*Math.sin((Lp-Mp)*DR)-115*Math.sin((Lp+Mp)*DR);
+  const lon=Lp+sl/1e6, lat=sb/1e6, dist=385000.56+sr/1000;
+  const nu=nutation(T), eps=(nu.eps0+nu.deps)*DR, lam=(lon+nu.dpsi)*DR, bet=lat*DR;
+  const ra=Math.atan2(Math.sin(lam)*Math.cos(eps)-Math.tan(bet)*Math.sin(eps),Math.cos(lam));
+  const dec=Math.asin(Math.sin(bet)*Math.cos(eps)+Math.cos(bet)*Math.sin(eps)*Math.sin(lam));
+  return { ra_h:norm360(ra*180/Math.PI)/15, dec:dec*180/Math.PI, r:dist/6378.14 }; }
+
+function sunAlt(date,ctx){ const s=sunEqu(date); return altOfRaw(s.ra_h,s.dec,date,ctx.lat,ctx.lon); }
+function moonAltAz(date,ctx){ const m=moonEqu(date); const a0=altOfRaw(m.ra_h,m.dec,date,ctx.lat,ctx.lon), par=Math.asin(1/m.r)*R2D;
+  return { alt:a0-par*Math.cos(a0*D2R), az:azOfRaw(m.ra_h,m.dec,date,ctx.lat,ctx.lon), r:m.r }; }
+function moonAlt(date,ctx){ return moonAltAz(date,ctx).alt; }
+function moonIllum(date){ const s=sunEqu(date), m=moonEqu(date);
+  const c=Math.sin(s.dec*D2R)*Math.sin(m.dec*D2R)+Math.cos(s.dec*D2R)*Math.cos(m.dec*D2R)*Math.cos((s.ra_h-m.ra_h)*15*D2R);
+  return (1-c)/2; }
+function parAngle(haDeg,decDeg,latDeg){ return Math.atan2(Math.sin(haDeg*D2R),
+  Math.tan(latDeg*D2R)*Math.cos(decDeg*D2R)-Math.sin(decDeg*D2R)*Math.cos(haDeg*D2R))*R2D; }
+function skyLabel(sa){ return sa>0?"daylight":sa>-6?"civil twilight":sa>-12?"nautical twilight":sa>-18?"astronomical twilight":"night"; }
+
+/* ---- limits + darkness --------------------------------------------------- */
+function parseCSV(text){ const rows=[];
+  for(let line of text.split(/\r?\n/)){ line=line.trim(); if(!line||line[0]==="#") continue;
+    const c=line.split(",").map(x=>x.trim()); if(isNaN(parseFloat(c[0]))||c.length<5) continue;
+    const [f,t,zmax,zsec,zfree]=c.map(Number); if([f,t,zmax,zsec,zfree].some(v=>!isFinite(v))) continue;
+    rows.push({from:norm360(f),to:(norm360(t)===0?360:norm360(t)),zmax,zsec,zfree}); }
+  return rows; }
+function lookup(azDeg){ const az=norm360(azDeg);
+  for(const s of SECTORS){ if(s.from<=s.to){ if(az>=s.from&&az<s.to) return s; } else { if(az>=s.from||az<s.to) return s; } }
+  for(const s of SECTORS){ if(s.to===360&&az>=s.from) return s; } return null; }
+function classify(za,alt,sector){
+  if(!sector)  return {level:"none",label:"NO LIMIT DATA",reason:"azimuth not in the limits table"};
+  if(alt<0)    return {level:"notvisible",label:"NOT VISIBLE",reason:"below horizon"};
+  if(sector.zmax>=NODATA_ZA) return {level:"none",label:"NO LIMIT DATA",reason:"no measured limit at this azimuth"};
+  if(za<=sector.zfree) return {level:"visible",label:"VISIBLE",reason:"clear of limits"};
+  if(za<sector.zmax)   return {level:"security",label:"SECURITY ZONE",reason:"caution band"};
+  return {level:"notvisible",label:"NOT VISIBLE",reason:"past the limit"}; }
+function sampleAt(date,ctx){ const p=observedAltAz(date,ctx); const pt=classify(p.za,p.alt,lookup(azConv(p.az))).level;
+  return {alt:p.alt,za:p.za,pt,dark:sunAlt(date,ctx)<DARK}; }
+const combinedLv = s => (s.pt==="notvisible"||s.pt==="none") ? s.pt : (s.dark ? s.pt : "bright");
+const KP=s=>s.pt, KC=s=>combinedLv(s), KD=s=>s.dark;
+function scan(ctx,base,end){ const step=20000, samples=[];
+  for(let t=base;t<=end;t+=step) samples.push({t, ...sampleAt(new Date(t),ctx)}); return {base,end,samples}; }
+function buildIntervals(ctx,samples,base,end,key){
+  const bisect=(t0,t1)=>{ const l0=key(sampleAt(new Date(t0),ctx));
+    while(t1-t0>2000){ const m=(t0+t1)/2; if(key(sampleAt(new Date(m),ctx))===l0) t0=m; else t1=m; } return t1; };
+  const iv=[]; let lv=key(samples[0]), start=base;
+  for(let i=1;i<samples.length;i++){ const k=key(samples[i]); if(k!==lv){ const e=bisect(samples[i-1].t,samples[i].t);
+    iv.push({lv,start,end:e}); lv=k; start=e; } }
+  iv.push({lv,start,end}); return iv; }
+function chartWindow(refMs){ const d=lp(refMs);
+  let noon=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),12,0,0)-siteTZ*60000;
+  if(refMs<noon) noon-=86400000; return {base:noon,end:noon+86400000}; }
+
+/* ---- formatting ---------------------------------------------------------- */
+function hms(deg){ let h=deg/15; const H=Math.floor(h); h=(h-H)*60; const M=Math.floor(h); let Sc=Math.round((h-M)*60);
+  let mm=M,hh=H; if(Sc===60){Sc=0;mm++;} if(mm===60){mm=0;hh=(hh+1)%24;} return pad(hh)+":"+pad(mm)+":"+pad(Sc); }
+function haHMS(h){ const s=h<0?"-":"+"; let a=Math.abs(h); const H=Math.floor(a); let m=(a-H)*60; let M=Math.floor(m); let S=(m-M)*60;
+  S=Math.round(S*100)/100; if(S>=60){S-=60;M++;} if(M>=60){M-=60;} return s+pad(H)+" "+pad(M)+" "+(S<10?"0":"")+S.toFixed(2); }
+function dur(ms,sec){ ms=Math.max(0,ms); let s=Math.round(ms/1000);
+  const h=Math.floor(s/3600); s-=h*3600; const m=Math.floor(s/60); s-=m*60;
+  return sec?(h+"h "+pad(m)+"m "+pad(s)+"s"):(h+"h "+pad(m)+"m"); }
+let refMid=0;
+let SB_STATE=null;   // {refMs, ctx, cw} of the last render -- read by js/field.js
+
+/* ---- targets: every target considered in this session -------------------- */
+// A looked-up name keeps its name; RA/Dec typed by hand become "Target 1", "Target 2", ...
+// The selected target (ACTIVE) is the one in the RA/Dec boxes: status, timers, timeline and
+// comparison field follow it; the airmass plot shows them all.
+const TGT_COL=["#5aa9e6","#f0a23a","#a77bf3","#1fb39f","#e8689f","#86b83a","#5f7cf0","#c08a5a"];
+let TARGETS=[], ACTIVE=-1, nAnon=0, nCol=0;
+const EDITED=new Set();                // RA/Dec boxes typed in since the last target entered the list
+const tgtActive=()=>TARGETS[ACTIVE]||null;
+function tgtFind(ra,dec){              // ra in hours, dec in degrees; same star within 1"
+  return TARGETS.findIndex(t=>Math.abs(t.dec-dec)<1/3600 && Math.abs((((t.ra-ra)*15%360)+540)%360-180)*Math.cos(dec*D2R)<1/3600); }
+function tgtAdd(ra,dec,name,raTxt,decTxt){
+  let i=tgtFind(ra,dec);
+  if(i<0){ TARGETS.push({ra,dec,raTxt,decTxt,name:name||("Target "+(++nAnon)),named:!!name,col:TGT_COL[nCol++%TGT_COL.length]}); i=TARGETS.length-1; }
+  else if(name&&TARGETS[i].name!==name){ TARGETS[i].name=name; TARGETS[i].named=true; }
+  return i; }
+// the typed RA/Dec join the list (with `name` when it was looked up); true if they are valid
+function tgtCommit(name){
+  const ra=parseAngle($("ra").value), dec=parseAngle($("dec").value);
+  EDITED.clear();
+  if(!isFinite(ra)||!isFinite(dec)) return false;
+  ACTIVE=tgtAdd(ra,dec,name||null,$("ra").value.trim(),$("dec").value.trim()); return true; }
+function tgtUse(i){                    // select target i: fill RA/Dec and the name box, redraw
+  const t=TARGETS[i]; if(!t) return;
+  ACTIVE=i; EDITED.clear(); $("ra").value=t.raTxt; $("dec").value=t.decTxt;
+  $("tName").value=t.named?t.name:""; $("tMsg").innerHTML=""; $("tMsg").className="name-msg";
+  render(); }
+function tgtDel(i){
+  TARGETS.splice(i,1);
+  if(i===ACTIVE){ ACTIVE=-1;
+    if(TARGETS.length){ tgtUse(Math.min(i,TARGETS.length-1)); return; }
+    $("ra").value=""; $("dec").value=""; $("tName").value=""; $("tMsg").innerHTML=""; }
+  else if(i<ACTIVE) ACTIVE--;
+  render(); }
+function tgtClear(){ TARGETS=[]; ACTIVE=-1; nAnon=0; nCol=0;
+  $("ra").value=""; $("dec").value=""; $("tName").value=""; $("tMsg").innerHTML=""; render(); }
+const escH=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function tgtUI(){                      // the chips, the field card's list and the plot legend
+  const L=$("tgtList");
+  let html=TARGETS.length?'<span class="tl-k">Targets</span>'+TARGETS.map((t,i)=>
+      '<span class="tchip'+(i===ACTIVE?' on':'')+'" style="--c:'+t.col+'"><button type="button" data-use="'+i+'" title="show '+escH(t.name)+'"><i></i>'+escH(t.name)+'</button>'
+      +'<button type="button" class="tx" data-del="'+i+'" aria-label="remove '+escH(t.name)+'" title="remove">×</button></span>').join("")
+    +(TARGETS.length>1?'<button type="button" class="tl-clear" id="tgtClear">clear all</button>':""):"";
+  if(ACTIVE<0&&isFinite(parseAngle($("ra").value))&&isFinite(parseAngle($("dec").value)))   // typed, not listed yet
+    html+='<button type="button" class="tl-add" id="tgtAddBtn">+ add these coordinates to the list</button>';
+  L.hidden=!html;
+  // rebuild only on a change: a redraw between mouse-down and mouse-up (a box losing focus
+  // fires one) would replace the button under the pointer and swallow the click
+  setHTML(L,html);
+  // the field card's two lists (controls row; summary bar, once a field is shown) and the plot legend
+  const sel=$("fTarget");
+  sel.disabled=!TARGETS.length;
+  setHTML(sel,tgtOptions());
+  if($("fTargetSum")) setHTML($("fTargetSum"),tgtOptions());
+  setHTML($("amTgtLegend"),TARGETS.length
+    ?TARGETS.map((t,i)=>'<button type="button" class="leg-tgt'+(i===ACTIVE?" on":"")+'" data-use="'+i+'" title="select '+escH(t.name)+'"'
+        +(i===ACTIVE?' aria-current="true"':'')+'><i class="dot" style="background:'+t.col+'"></i>'+escH(t.name)+'</button>').join("")
+    :'<span><i class="dot" style="background:var(--sky)"></i>Target</span>'); }
+// rebuild an element only when its markup changes (a redraw under the pointer swallows clicks,
+// and one under an open drop-down list closes it)
+function setHTML(e,html){ if(e._html!==html){ e.innerHTML=html; e._html=html; } }
+function tgtOptions(){
+  if(!TARGETS.length) return '<option value="">no target yet</option>';
+  return (ACTIVE<0?'<option value="" selected>'+(isFinite(parseAngle($("ra").value))?"typed coordinates":"choose a target")+'</option>':"")
+    +TARGETS.map((t,i)=>'<option value="'+i+'"'+(i===ACTIVE?" selected":"")+'>'+escH(t.name)+'</option>').join(""); }
+function tgtCurves(lat,lon,refMs,base,end){   // altitude curves of every target but the selected one
+  return TARGETS.map((t,i)=>{ if(i===ACTIVE) return null;
+    const c=makeCtx(t.ra,t.dec,lat,lon,new Date(refMs)), pts=[];
+    for(let x=base;x<=end;x+=300000) pts.push({t:x,alt:observedAltAz(new Date(x),c).alt});
+    return {name:t.name,col:t.col,samples:pts}; }).filter(Boolean); }
+function tagT(t){ const off=Math.floor((t-refMid)/86400000); return hmL(t)+(off>0?("<sup>+"+off+"</sup>"):""); }
+const $=id=>document.getElementById(id);
+const LABELS={visible:"pointable",security:"security zone",notvisible:"not visible",none:"no limit data"};
+
+/* ---- status -------------------------------------------------------------- */
+function precessOnly(ra0_h, dec0_deg, date){
+  const T=(jdFromDate(date)-2451545.0)/36525;
+  const z1=(2306.2181*T+0.30188*T*T+0.017998*T*T*T)/3600*D2R;
+  const z2=(2306.2181*T+1.09468*T*T+0.018203*T*T*T)/3600*D2R;
+  const th=(2004.3109*T-0.42665*T*T-0.041833*T*T*T)/3600*D2R;
+  const a0=ra0_h*15*D2R, d0=dec0_deg*D2R;
+  const A=Math.cos(d0)*Math.sin(a0+z1);
+  const B=Math.cos(th)*Math.cos(d0)*Math.cos(a0+z1)-Math.sin(th)*Math.sin(d0);
+  const C=Math.sin(th)*Math.cos(d0)*Math.cos(a0+z1)+Math.cos(th)*Math.sin(d0);
+  return { ra_h:norm360((Math.atan2(A,B)+z2)*R2D)/15, dec:Math.asin(Math.max(-1,Math.min(1,C)))*R2D };
+}
+function raStr(h){ h=((h%24)+24)%24; const H=Math.floor(h); let mm=(h-H)*60; let M=Math.floor(mm); let s=(mm-M)*60;
+  s=Math.round(s*100)/100; if(s>=60){s-=60;M++;} if(M>=60){M-=60;} return pad(H)+" "+pad(M)+" "+(s<10?"0":"")+s.toFixed(2); }
+function decStr(d){ const sg=d<0?"−":"+"; let a=Math.abs(d); const D=Math.floor(a); let mm=(a-D)*60; let M=Math.floor(mm); let s=(mm-M)*60;
+  s=Math.round(s*10)/10; if(s>=60){s-=60;M++;} if(M>=60){M-=60;} return sg+pad(D)+" "+pad(M)+" "+(s<10?"0":"")+s.toFixed(1); }
+function makeCtx(ra,dec,lat,lon,date){
+  const mode=$("reduce").value;
+  if(mode==="full"){ const app=apparentPlace(ra,dec,date); return {ra,dec,lat,lon,raApp:app.ra_h,decApp:app.dec,eqeq:app.eqeq}; }
+  if(mode==="prec"){ const p=precessOnly(ra,dec,date); return {ra,dec,lat,lon,raApp:p.ra_h,decApp:p.dec,eqeq:0}; }
+  return {ra,dec,lat,lon,raApp:ra,decApp:dec,eqeq:0}; }
+function fillStatus(ms, ctx){
+  const date=new Date(ms), p=observedAltAz(date,ctx), pt=classify(p.za,p.alt,lookup(p.az)), sa=sunAlt(date,ctx);
+  const dark=sa<DARK;
+  const ptLabel=pt.level==="visible"?"POINTABLE":pt.level==="security"?"SECURITY ZONE":pt.level==="none"?"NO LIMIT DATA":"NOT POINTABLE";
+  const ptb=$("ptBadge"); ptb.className="badge b-"+pt.level; ptb.firstChild.textContent=ptLabel; $("ptSub").textContent=pt.reason;
+  const skyb=$("skyBadge"); skyb.className="badge b-"+(dark?"visible":"bright"); skyb.firstChild.textContent=dark?"VISIBLE":"NOT VISIBLE"; $("skySub").textContent=skyLabel(sa);
+  const level=(pt.level==="notvisible"||pt.level==="none")?pt.level:(dark?pt.level:"bright");
+  const am=p.alt>0?(1/Math.sin(p.alt*D2R)):null;
+  $("readout").innerHTML=[
+    ["Azimuth",azConv(p.az).toFixed(2)+"°"],["Zenith angle",p.za.toFixed(2)+"°"],["Altitude",p.alt.toFixed(2)+"°"],
+    ["Airmass",am?am.toFixed(3):"—"],["Hour angle",haHMS(p.ha/15)],["Sun alt",sa.toFixed(1)+"°"],
+  ].map(([k,v])=>'<div class="ro"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>').join("");
+  $("clock").innerHTML=clockHTML(ms,ctx);
+  return level; }
+function clockHTML(ms,ctx){ const jd=jdFromMs(ms), epoch=2000+(jd-2451545)/365.25;
+  return "Local <b>"+clockL(ms)+"</b> ("+tzLabel()+") &nbsp;·&nbsp; UT <b>"+clockU(ms)+"</b> &nbsp;·&nbsp; LST <b>"
+    +hms(lastDeg(new Date(ms),ctx))+"</b> &nbsp;·&nbsp; JD <b>"+jd.toFixed(5)+"</b> &nbsp;·&nbsp; Epoch <b>"+epoch.toFixed(2)+"</b>"; }
+
+/* ---- no target (yet): the night and the Moon only ------------------------ */
+const siteCtx=(lat,lon)=>({ra:NaN,dec:NaN,lat,lon,raApp:NaN,decApp:NaN,eqeq:0});
+function fillSky(ms,ctx,why){
+  const date=new Date(ms), sa=sunAlt(date,ctx), dark=sa<DARK, m=moonAltAz(date,ctx);
+  const ptb=$("ptBadge"); ptb.className="badge b-none"; ptb.firstChild.textContent="—"; $("ptSub").textContent=why;
+  const skyb=$("skyBadge"); skyb.className="badge b-"+(dark?"visible":"bright"); skyb.firstChild.textContent=dark?"VISIBLE":"NOT VISIBLE"; $("skySub").textContent=skyLabel(sa);
+  $("readout").innerHTML=[["Sun alt",sa.toFixed(1)+"°"],["Moon alt",m.alt.toFixed(1)+"°"],["Moon az",azConv(m.az).toFixed(1)+"°"],
+    ["Moon lit",Math.round(moonIllum(date)*100)+"%"]].map(([k,v])=>'<div class="ro"><span class="k">'+k+'</span><span class="v">'+v+'</span></div>').join("");
+  $("clock").innerHTML=clockHTML(ms,ctx); }
+function darkIntervals(ctx,base,end){ let lv=sunAlt(new Date(base),ctx)<DARK, start=base; const iv=[];
+  for(let t=base+60000;t<=end;t+=60000){ const d=sunAlt(new Date(t),ctx)<DARK; if(d!==lv){ iv.push({lv,start,end:t}); lv=d; start=t; } }
+  iv.push({lv,start,end}); return iv; }
+function renderSky(refMs,lat,lon,why){
+  const ctx=siteCtx(lat,lon); lastCtx=null; SB_STATE=null;
+  tA_ts=tB_ts=null; tA_label="Time to limit"; tB_label="Observable in"; paintTimers(refMs);
+  $("precBox").textContent="";
+  const cw=chartWindow(refMs);
+  refMid=(()=>{ const d=lp(cw.base); return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),0,0,0)-siteTZ*60000; })();
+  { const d=lp(cw.base); $("visDate").textContent="· "+d.getUTCDate()+" "+MON[d.getUTCMonth()]+" "+d.getUTCFullYear(); }
+  fillSky(refMs,ctx,why);
+  $("summary").innerHTML = why==="choose a target"
+    ? "No target selected: pick one from the list above the plot, or type a new one."
+    : why==="enter a target"
+    ? "No target yet: type a name or RA/Dec above. Until then the plot shows the night and the Moon."
+    : "These RA / Dec can't be read (formats above each box). The plot shows the night and the Moon.";
+  $("windows").innerHTML="";
+  const ticks=hourTicks(cw.base,cw.end);
+  drawTimeline(cw.base,cw.end,[],darkIntervals(ctx,cw.base,cw.end),refMs,ticks);
+  drawAirmass({base:cw.base,end:cw.end,samples:[]},refMs,ticks,ctx,tgtCurves(lat,lon,refMs,cw.base,cw.end),null);
+  if(liveMode){ tickTimer=setInterval(()=>{ const now=Date.now(); $("when").value=fmtISO(now); fillSky(now,ctx,why); },1000);
+    refreshTimer=setInterval(render,30000); }
+  if(typeof Field!=="undefined") Field.onRender();
+}
+
+/* ---- two always-visible timers: pointing limit + observability ---------- */
+function paintTimers(nowMs){
+  const sec=liveMode;
+  $("cdLabelA").textContent=tA_label; $("cdA").textContent = tA_ts!=null?dur(tA_ts-nowMs,sec):"—";
+  $("cdLabelB").textContent=tB_label; $("cdB").textContent = tB_ts!=null?dur(tB_ts-nowMs,sec):"—";
+  if(liveMode && ((tA_ts!=null && nowMs>=tA_ts) || (tB_ts!=null && nowMs>=tB_ts))) render();
+}
+function updateNow(){
+  const ra=parseAngle($("ra").value), dec=parseAngle($("dec").value);
+  const lat=parseFloat($("lat").value), lon=parseFloat($("lon").value);
+  if(!isFinite(ra)||!isFinite(dec)) return;
+  const now=Date.now(); if(liveMode) $("when").value=fmtISO(now);
+  const ctx=makeCtx(ra,dec,lat,lon,new Date(now)); lastCtx=ctx; fillStatus(now,ctx); paintTimers(now);
+}
+
+/* ---- render -------------------------------------------------------------- */
+function render(){
+  if(tickTimer) clearInterval(tickTimer); if(refreshTimer) clearInterval(refreshTimer); tickTimer=refreshTimer=null;
+  hideTip();
+  const ra=parseAngle($("ra").value), dec=parseAngle($("dec").value);
+  const lat=parseFloat($("lat").value), lon=parseFloat($("lon").value);
+  const refMs=liveMode?Date.now():parseISO($("when").value);
+  if(liveMode) $("when").value=fmtISO(refMs);
+  SITE_P = pressFromAlt(parseFloat($("alt").value)); CONV = $("azconv").value;
+  if(!isFinite(ra)||!isFinite(dec)){
+    const empty=!$("ra").value.trim() && !$("dec").value.trim();
+    ACTIVE=-1; tgtUI();
+    renderSky(refMs,lat,lon,empty?(TARGETS.length?"choose a target":"enter a target"):"check RA / Dec"); return; }
+  ACTIVE=tgtFind(ra,dec); tgtUI();
+  const ctx=makeCtx(ra,dec,lat,lon,new Date(refMs)); lastCtx=ctx;
+  { const mode=$("reduce").value, dRA=(ctx.raApp-ctx.ra)*3600, dDec=(ctx.decApp-ctx.dec)*3600, ep=2000+(jdFromMs(refMs)-2451545)/365.25;
+    $("precBox").innerHTML = mode==="none"
+      ? '<span class="pb-k">tracking input coordinates (of date)</span>'
+      : '<span class="pb-k">J2000</span> '+raStr(ctx.ra)+' '+decStr(ctx.dec)
+        +' <span class="pb-arrow">&rarr;</span> <span class="pb-k">'+ep.toFixed(2)+'</span> '+raStr(ctx.raApp)+' '+decStr(ctx.decApp)
+        +' <span class="pb-d">&Delta; '+(dRA>=0?'+':'')+dRA.toFixed(1)+'s / '+(dDec>=0?'+':'−')+Math.abs(dDec).toFixed(0)+'&Prime;</span>'; }
+  const cw=chartWindow(refMs);
+  refMid=(()=>{ const d=lp(cw.base); return Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),0,0,0)-siteTZ*60000; })();
+  { const d=lp(cw.base); $("visDate").textContent="· "+d.getUTCDate()+" "+MON[d.getUTCMonth()]+" "+d.getUTCFullYear(); }
+  const lvl=fillStatus(refMs,ctx);
+  const sky=skyLabel(sunAlt(new Date(refMs),ctx));
+
+  // chart window: pointing base + darkness overlay + target curve
+  const chart=scan(ctx,cw.base,cw.end);
+  const ptIv=buildIntervals(ctx,chart.samples,cw.base,cw.end,KP);
+  const darkIv=buildIntervals(ctx,chart.samples,cw.base,cw.end,KD);
+
+  const ext=scan(ctx,refMs-8*3600000,refMs+24*3600000);
+  // Timer A -- pointing limit only (ignores darkness): mirrors a mount's time-to-limit
+  const ptExt=buildIntervals(ctx,ext.samples,ext.base,ext.end,s=>(s.pt==="visible"||s.pt==="security")?"on":"off");
+  const curPt=sampleAt(new Date(refMs),ctx).pt;
+  if(curPt==="none"){ tA_label="Time to limit"; tA_ts=null; }
+  else if(curPt==="visible"||curPt==="security"){ const off=ptExt.find(i=>i.lv==="off"&&i.start>refMs+1); tA_label="Time to limit"; tA_ts=off?off.start:null; }
+  else     { const on =ptExt.find(i=>i.lv==="on" &&i.start>refMs+1); tA_label="Pointable in"; tA_ts=on?on.start:null; }
+  // Timer B -- observability (pointable AND dark)
+  const extC=buildIntervals(ctx,ext.samples,ext.base,ext.end,KC);
+  const isObs=lv=>lv==="visible"||lv==="security";
+  const obs=extC.filter(i=>isObs(i.lv));
+  const cur=obs.find(i=>i.start<=refMs && refMs<i.end);
+  if(cur){ tB_label="Observable for"; tB_ts=cur.end; }
+  else   { const fut=obs.find(i=>i.start>refMs); tB_label="Observable in"; tB_ts=fut?fut.start:null; }
+  paintTimers(refMs);
+
+  let summary; const obsNow=isObs(lvl);
+  if(obsNow) summary="Observable now ("+sky+")."+(tB_ts?(" Window ends at <b>"+tagT(tB_ts)+"</b>."):"")+(tA_ts?(" Pointing limit at <b>"+tagT(tA_ts)+"</b>."):"");
+  else if(lvl==="bright") summary="Pointable now, but the sky is "+sky+"."+(tA_ts?(" Pointing limit at <b>"+tagT(tA_ts)+"</b>."):"")+(tB_ts?(" Dark from <b>"+tagT(tB_ts)+"</b>."):"");
+  else if(lvl==="none") summary="No measured limit at this azimuth — the tool can't confirm a pointing limit here.";
+  else summary="Not pointable now — past the limit or below the horizon."+(tA_ts?(" Pointable from <b>"+tagT(tA_ts)+"</b>."):"");
+  $("summary").innerHTML=(tgtActive()&&TARGETS.length>1?"<b>"+escH(tgtActive().name)+":</b> ":"")+summary;
+
+  $("windows").innerHTML=ptIv.map(i=>{
+    const cls=i.lv==="visible"?"vis":i.lv==="security"?"sec":i.lv==="notvisible"?"nov":"none";
+    return '<li class="'+((i.lv==="notvisible"||i.lv==="none")?"dim":"")+'"><i class="dot" style="background:var(--'+cls+')"></i>'
+      +'<span class="t">'+tagT(i.start)+' &rarr; '+tagT(i.end)+'</span><span class="lab">'+LABELS[i.lv]
+      +'</span><span class="dur">'+dur(i.end-i.start,false)+'</span></li>'; }).join("");
+
+  SB_STATE={refMs,ctx,cw};
+  const ticks=hourTicks(cw.base,cw.end);
+  drawTimeline(cw.base,cw.end,ptIv,darkIv,refMs,ticks);
+  drawAirmass(chart,refMs,ticks,ctx,tgtCurves(lat,lon,refMs,cw.base,cw.end),tgtActive());
+  if(liveMode){ tickTimer=setInterval(updateNow,1000); refreshTimer=setInterval(render,30000); }
+  if(typeof Field!=="undefined") Field.onRender();
+}
+
+/* ---- canvas -------------------------------------------------------------- */
+const PADL=38, PADR_OFF=52;
+function hourTicks(base,end){ const d=lp(base);
+  let h=Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate(),d.getUTCHours(),0,0)-siteTZ*60000;
+  while(h<base) h+=3600000; while(lp(h).getUTCHours()%3!==0) h+=3600000;
+  const arr=[]; for(;h<=end;h+=3*3600000) arr.push(h); return arr; }
+function setupCanvas(cv,H){ const dpr=window.devicePixelRatio||1, W=cv.clientWidth;
+  cv.style.height=H+"px"; cv.width=W*dpr; cv.height=H*dpr;
+  const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H); g.font="10px "+FF; return {g,W,H}; }
+const COL={visible:"#1f9d63",security:"#E2A123",notvisible:"#c0392b",none:"#8896a6"};
+const lerp=(a,b,t)=>a+(b-a)*t;
+const mix=(c1,c2,t)=>[Math.round(lerp(c1[0],c2[0],t)),Math.round(lerp(c1[1],c2[1],t)),Math.round(lerp(c1[2],c2[2],t))];
+const rgb=c=>"rgb("+c[0]+","+c[1]+","+c[2]+")";
+function drawTimeline(base,end,ptIv,darkIv,refMs,ticks){
+  const {g,W,H}=setupCanvas($("timeline"),44);
+  const padL=PADL, padR=W-PADR_OFF, span=end-base, x=t=>padL+(t-base)/span*(padR-padL);
+  const top=5, barH=24;
+  if(!ptIv.length){ g.fillStyle="#e6ebf2"; g.fillRect(padL,top,padR-padL,barH); }
+  ptIv.forEach(i=>{ g.fillStyle=COL[i.lv]||COL.none; const x0=x(i.start),x1=x(i.end); g.fillRect(x0,top,Math.max(1,x1-x0),barH); });
+  darkIv.forEach(i=>{ if(!i.lv){ g.fillStyle="rgba(120,135,158,.55)"; const x0=x(i.start),x1=x(i.end); g.fillRect(x0,top,Math.max(1,x1-x0),barH); } });
+  g.textBaseline="alphabetic";
+  ticks.forEach(t=>{ const px=x(t); g.fillStyle="#c3ccd8"; g.fillRect(px,top,1,barH+3);
+    g.fillStyle="#5b6b7d"; g.textAlign=px<padL+14?"left":px>padR-14?"right":"center"; g.fillText(pad(lp(t).getUTCHours())+"h",px,H-3); });
+  const nt=refMs; if(nt>=base&&nt<=end){ g.fillStyle="#0e1f33"; g.fillRect(x(nt)-1,top-3,2,barH+6); }
+}
+// times the Sun crosses altitude h (degrees) between base and end: [{t, rising}]
+function sunCrossings(ctx,base,end,h){ const out=[]; let t0=base, a0=sunAlt(new Date(base),ctx)-h;
+  for(let t=base+60000;t<=end;t+=60000){ const a=sunAlt(new Date(t),ctx)-h;
+    if((a0<0)!==(a<0)) out.push({t:t0+(t-t0)*a0/(a0-a),rising:a>a0}); t0=t; a0=a; }
+  return out; }
+function drawAirmass(sc,refMs,ticks,ctx,others,act){
+  const cv=$("airmass"); const H=Math.round(cv.clientWidth*8/16);
+  const {g,W}=setupCanvas(cv,H);
+  const padL=PADL, padR=W-PADR_OFF, top=14, bot=H-22, base=sc.base, span=sc.end-sc.base;
+  const x=t=>padL+(t-base)/span*(padR-padL), yA=a=>bot-(Math.max(0,Math.min(90,a))/90)*(bot-top);
+  plotGeom={padL,padR,top,bot,base,span};
+  const ov=$("amOverlay"), dpr=window.devicePixelRatio||1;
+  ov.style.height=H+"px"; ov.width=W*dpr; ov.height=H*dpr;
+  { const go=ov.getContext("2d"); go.setTransform(dpr,0,0,dpr,0,0); go.clearRect(0,0,W,H); }
+  const DAY=[247,249,252], NIGHT=[10,17,40], MOON=[96,120,210], illum=moonIllum(new Date(refMs));
+  // sky colour sampled every ~2 px, painted as ONE gradient-filled rectangle: strips of their own
+  // would meet at fractional device pixels at browser zooms like 110 % and leave light seams
+  const skyGrad=g.createLinearGradient(padL,0,padR,0), nS=Math.max(2,Math.ceil((padR-padL)/2));
+  for(let i=0;i<=nS;i++){ const f=i/nS, dt=new Date(base+f*span), sa=sunAlt(dt,ctx);
+    let sh=Math.max(0,Math.min(1,(-sa)/18)); sh=sh*sh*(3-2*sh); let c=mix(DAY,NIGHT,sh);
+    if(sa<0){ const ma=moonAlt(dt,ctx); if(ma>0){ const tA=0.6*illum*Math.max(0,Math.min(1,ma/60))*sh; c=mix(c,MOON,tA); } }
+    skyGrad.addColorStop(f,rgb(c)); }
+  g.fillStyle=skyGrad; g.fillRect(padL,top,padR-padL,bot-top);
+  g.lineWidth=1; g.strokeStyle="rgba(120,140,170,.42)"; g.setLineDash([4,4]);
+  [30,60].forEach(a=>{ const py=yA(a)+.5; g.beginPath(); g.moveTo(padL,py); g.lineTo(padR,py); g.stroke(); });
+  g.setLineDash([]); g.strokeStyle="rgba(120,140,170,.18)";
+  ticks.forEach(t=>{ const px=x(t)+.5; g.beginPath(); g.moveTo(px,top); g.lineTo(px,bot); g.stroke(); });
+  g.strokeStyle="rgba(120,140,170,.55)"; g.strokeRect(padL+.5,top+.5,padR-padL,bot-top);
+  // sunset / sunrise (upper limb, refraction: −0.833°) and dusk / dawn at the darkness limit
+  const darkTxt=(DARK<0?"−":"")+Math.abs(DARK)+"°";
+  [[-0.833,"#e8833a",[],r=>r?"sunrise":"sunset"],[DARK,"#8a9bc0",[5,4],r=>(r?"dawn ":"dusk ")+darkTxt]].forEach(([h,col,dash,name])=>{
+    let sh=Math.max(0,Math.min(1,-h/18)); sh=sh*sh*(3-2*sh);
+    const dark=sh>0.5;                     // the sky there is dark: light text
+    sunCrossings(ctx,base,sc.end,h).forEach(c=>{ const px=Math.round(x(c.t))+.5;
+      g.strokeStyle=col; g.lineWidth=1.4; g.setLineDash(dash); g.beginPath(); g.moveTo(px,top); g.lineTo(px,bot); g.stroke(); g.setLineDash([]);
+      g.save(); g.translate(px+(c.rising?-4:4),top+5); g.rotate(-Math.PI/2);
+      g.font="600 10.5px "+FF; g.textAlign="right"; g.textBaseline=c.rising?"bottom":"top";
+      const txt=name(c.rising)+" "+hmL(c.t);
+      g.lineWidth=3; g.strokeStyle=dark?"rgba(10,17,40,.85)":"rgba(255,255,255,.9)"; g.strokeText(txt,0,0);
+      g.fillStyle=dark?"#d6deec":(h>-1?"#b85a1e":"#4c5d80"); g.fillText(txt,0,0); g.restore(); }); });
+  g.font="bold 11.5px "+FF; g.fillStyle="#3d4b5c"; g.textBaseline="middle"; g.textAlign="right";
+  [0,30,60,90].forEach(a=> g.fillText(a+"°",padL-6,yA(a)));
+  g.textAlign="left";
+  [1,1.2,1.4,1.6,1.8,2,2.5,3].forEach(m=>{ const a=90-Math.acos(1/m)*R2D, py=yA(a);
+    g.strokeStyle="rgba(110,128,152,.75)"; g.lineWidth=1.2; g.beginPath(); g.moveTo(padR,py); g.lineTo(padR+5,py); g.stroke();
+    g.fillStyle="#3d4b5c"; g.fillText(m.toFixed(1).replace(/\.0$/,""),padR+8,py); });
+  g.font="bold 12.5px "+FF; g.fillStyle="#33404f";
+  g.save(); g.translate(12,(top+bot)/2); g.rotate(-Math.PI/2); g.textAlign="center"; g.fillText("altitude",0,0); g.restore();
+  g.save(); g.translate(W-11,(top+bot)/2); g.rotate(Math.PI/2); g.textAlign="center"; g.fillText("airmass",0,0); g.restore();
+  g.font="bold 11.5px "+FF; g.fillStyle="#3d4b5c"; g.textBaseline="alphabetic";
+  ticks.forEach(t=>{ const px=x(t); g.textAlign=px<padL+14?"left":px>padR-14?"right":"center"; g.fillText(pad(lp(t).getUTCHours())+"h",px,H-5); });
+  g.strokeStyle="#e0524f"; g.lineWidth=1.6; g.setLineDash([5,4]); g.beginPath();
+  let stM=false, peak=-99, ppx=0, ppy=0;
+  for(let t=base;t<=sc.end;t+=120000){ const a=moonAlt(new Date(t),ctx);
+    if(a>0){ const px=x(t),py=yA(a); if(!stM){g.moveTo(px,py);stM=true;}else g.lineTo(px,py); if(a>peak){peak=a;ppx=px;ppy=py;} } else stM=false; }
+  g.stroke(); g.setLineDash([]);
+  const curve=(samples,col,w)=>{ g.strokeStyle=col; g.lineWidth=w; g.beginPath(); let st=false, pk={alt:-99};
+    samples.forEach(s=>{ if(s.alt>0){ const px=x(s.t),py=yA(s.alt); if(!st){g.moveTo(px,py);st=true;}else g.lineTo(px,py); if(s.alt>pk.alt) pk=s; } else st=false; });
+    g.stroke(); return pk; };
+  const labels=[];
+  (others||[]).forEach(o=>{ g.globalAlpha=.85; const pk=curve(o.samples,o.col,1.6); g.globalAlpha=1; if(pk.alt>2) labels.push([o.name,o.col,pk,false]); });
+  const pkA=curve(sc.samples,act?act.col:"#5aa9e6",2.4);
+  if(act&&(others||[]).length&&pkA.alt>2) labels.push([act.name,act.col,pkA,true]);
+  if(peak>2){ g.fillStyle="#e0524f"; g.textAlign="center"; g.textBaseline="bottom"; g.fillText("Moon",ppx,ppy-3); }
+  labels.forEach(([nm,col,pk,on])=>{ const px=x(pk.t), py=yA(pk.alt);
+    g.font=(on?"bold ":"600 ")+"11px "+FF; g.textAlign=px<padL+40?"left":px>padR-40?"right":"center"; g.textBaseline="bottom";
+    g.lineWidth=3; g.strokeStyle=sunAlt(new Date(pk.t),ctx)<-9?"rgba(10,17,40,.8)":"rgba(255,255,255,.85)";
+    g.strokeText(nm,px,py-4); g.fillStyle=col; g.fillText(nm,px,py-4); });
+  const nt=refMs;
+  if(nt>=base&&nt<=sc.end){ const px=x(nt); g.strokeStyle="rgba(255,255,255,.9)"; g.lineWidth=1.5;
+    g.beginPath(); g.moveTo(px,top); g.lineTo(px,bot); g.stroke();
+    g.fillStyle="#E2A123"; g.beginPath(); g.moveTo(px,bot); g.lineTo(px-5,bot+7); g.lineTo(px+5,bot+7); g.closePath(); g.fill(); }
+  const fm=(typeof Field!=="undefined")?Field.markerMs():null;   // planned time of the comparison field
+  if(fm!=null&&fm>=base&&fm<=sc.end){ const px=x(fm)+.5; g.strokeStyle="#E2A123"; g.lineWidth=1.4; g.setLineDash([6,4]);
+    g.beginPath(); g.moveTo(px,top); g.lineTo(px,bot); g.stroke(); g.setLineDash([]);
+    g.font="bold 11px "+FF; g.fillStyle="#E2A123"; g.textAlign=px>padR-40?"right":"left"; g.textBaseline="top";
+    g.fillText("field",px+(px>padR-40?-4:4),top+4); }
+}
+
+/* ---- hover tooltip ------------------------------------------------------- */
+function hideTip(){ $("amTip").style.display="none"; const ov=$("amOverlay");
+  if(ov&&ov.getContext){ const dpr=window.devicePixelRatio||1, g=ov.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,ov.width/dpr,ov.height/dpr); } }
+function onAmMove(ev){
+  if(!plotGeom||!lastCtx) return;
+  const {padL,padR,top,bot,base,span}=plotGeom;
+  const rect=$("airmass").getBoundingClientRect(), mx=ev.clientX-rect.left, my=ev.clientY-rect.top;
+  if(mx<padL||mx>padR){ hideTip(); return; }
+  const t=base+(mx-padL)/(padR-padL)*span, date=new Date(t), p=observedAltAz(date,lastCtx);
+  if(p.alt<=0){ hideTip(); return; }
+  const yA=a=>bot-(Math.max(0,Math.min(90,a))/90)*(bot-top), py=yA(p.alt);
+  const ov=$("amOverlay"), dpr=window.devicePixelRatio||1, g=ov.getContext("2d");
+  g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,ov.width/dpr,ov.height/dpr);
+  g.strokeStyle="#E2A123"; g.lineWidth=1.2; g.setLineDash([4,3]);
+  g.beginPath(); g.moveTo(mx,top); g.lineTo(mx,bot); g.stroke();
+  g.beginPath(); g.moveTo(padL,py); g.lineTo(padR,py); g.stroke(); g.setLineDash([]);
+  g.fillStyle="#E2A123"; g.beginPath(); g.arc(mx,py,3.5,0,7); g.fill(); g.strokeStyle="#0e1f33"; g.lineWidth=1.2; g.stroke();
+  const am=1/Math.sin(p.alt*D2R), moon=moonAltAz(date,lastCtx), q=parAngle(p.ha,lastCtx.decApp,lastCtx.lat), fli=moonIllum(date);
+  const rows=[["local",clockL(t)],["UT",clockU(t)],["LST",hms(lastDeg(date,lastCtx))],
+    ["_hr"],["altitude",p.alt.toFixed(1)+"°"],["azimuth",azConv(p.az).toFixed(1)+"°"],["airmass",am.toFixed(2)],
+    ["_hr"],["Moon alt",moon.alt.toFixed(1)+"°"],["Moon az",azConv(moon.az).toFixed(1)+"°"],["Moon dist",moon.r.toFixed(1)+" R⊕"],
+    ["FLI",fli.toFixed(2)],["par. angle",q.toFixed(0)+"°"]];
+  let html='<div class="h">'+escH(tgtActive()?tgtActive().name:"Target")+' · '+hmL(t)+'</div>';
+  rows.forEach(r=>{ if(r[0]==="_hr") html+='<hr>'; else html+='<div class="r"><span>'+r[0]+'</span><b>'+r[1]+'</b></div>'; });
+  const tip=$("amTip"); tip.innerHTML=html; tip.style.display="block";
+  const tw=tip.offsetWidth||176; let lx=mx+14; if(lx+tw>padR+PADR_OFF) lx=mx-tw-14;
+  tip.style.left=Math.max(2,lx)+"px"; tip.style.top=Math.max(4,Math.min(my-10,bot-60))+"px";
+}
+
+/* ---- wiring -------------------------------------------------------------- */
+function buildScopeSelect(){ const sel=$("scope"); const groups={};
+  SITES.forEach((s,i)=>{ (groups[s[0]]=groups[s[0]]||[]).push([i,s[1]]); });
+  let html="";
+  for(const g in groups){ html+='<optgroup label="'+g+'">';
+    groups[g].forEach(([i,nm])=> html+='<option value="'+i+'">'+nm+'</option>'); html+='</optgroup>'; }
+  html+='<option value="custom">Custom…</option>'; sel.innerHTML=html; sel.value="0"; }
+function applyScope(){ const v=$("scope").value; if(v==="custom") return;
+  const s=SITES[+v]; $("lat").value=s[2]; $("lon").value=s[3]; $("alt").value=s[4]; siteTZ=s[5]; render(); }
+function setCSV(text,label){ const parsed=parseCSV(text); if(!parsed.length){ alert("No usable rows found in that CSV."); return; }
+  SECTORS=parsed; $("csvName").textContent=label; $("limName").textContent=label; render(); }
+function shiftWhen(days,months){ let ms=parseISO($("when").value); const d=lp(ms);
+  ms=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+months,d.getUTCDate()+days,d.getUTCHours(),d.getUTCMinutes(),d.getUTCSeconds())-siteTZ*60000;
+  liveMode=false; $("when").value=fmtISO(ms); render(); }
+$("tgtList").addEventListener("click",e=>{ const u=e.target.closest("[data-use]"), d=e.target.closest("[data-del]");
+  if(d) tgtDel(+d.dataset.del); else if(u) tgtUse(+u.dataset.use); else if(e.target.id==="tgtClear") tgtClear();
+  else if(e.target.id==="tgtAddBtn"){ tgtCommit(); render(); } });
+$("amTgtLegend").addEventListener("click",e=>{ const u=e.target.closest("[data-use]"); if(u) tgtUse(+u.dataset.use); });
+$("scope").addEventListener("change",applyScope);
+$("azconv").addEventListener("change",render);
+const TEMPLATE_CSV=
+`# SkyBound telescope limits template. One row per azimuth sector (they should tile 0-360; a row may wrap North, e.g. 350,10).
+# azimuth in the convention set in the app; zenith angle in degrees, 0 at the zenith (90 = horizon).
+# zenit_angle_free  = still fully within limits (clear)
+# zenit_angle_max   = the hard pointing limit (past it = not reachable)
+# zenit_angle_security = a caution threshold between free and max
+# Leave a sector at zenit_angle_max = 90 (or >=85) where you have no measured mount limit -> SkyBound shows "no limit data" there.
+azimute_from,azimute_to,zenit_angle_max,zenit_angle_security,zenit_angle_free
+0,90,75,70,65
+90,180,75,70,65
+180,270,75,70,65
+270,360,75,70,65
+`;
+function downloadCSV(text,name){ const b=new Blob([text],{type:"text/csv"}); const u=URL.createObjectURL(b);
+  const a=document.createElement("a"); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); }
+$("csvTemplate").addEventListener("click",()=>downloadCSV(TEMPLATE_CSV,"skybound_limits_template.csv"));
+$("darkLimit").addEventListener("change",()=>{ DARK=parseFloat($("darkLimit").value); render(); });
+$("prevMon").addEventListener("click",()=>shiftWhen(0,-1));
+$("prevDay").addEventListener("click",()=>shiftWhen(-1,0));
+$("nextDay").addEventListener("click",()=>shiftWhen(1,0));
+$("nextMon").addEventListener("click",()=>shiftWhen(0,1));
+$("nowBtn").addEventListener("click",()=>{ liveMode=true; render(); });
+$("calcBtn").addEventListener("click",()=>{ tgtCommit(); render(); });
+$("reduce").addEventListener("change",render);
+["ra","dec"].forEach(id=>{
+  $(id).addEventListener("change",()=>{ EDITED.add(id);
+    const ra=parseAngle($("ra").value), dec=parseAngle($("dec").value), i=isFinite(ra)&&isFinite(dec)?tgtFind(ra,dec):-1;
+    $("tName").value=i>=0&&TARGETS[i].named?TARGETS[i].name:"";          // the name box says what these coordinates are
+    if(i>=0) EDITED.clear();                                              // back on a listed target
+    else if(EDITED.has("ra")&&EDITED.has("dec")) tgtCommit();               // both typed: a new target
+    render(); });
+  $(id).addEventListener("keydown",e=>{ if(e.key==="Enter"){ tgtCommit(); render(); } }); });
+$("lat").addEventListener("change",()=>{ $("scope").value="custom"; render(); });
+$("lon").addEventListener("change",()=>{ $("scope").value="custom"; render(); });
+$("alt").addEventListener("change",()=>{ $("scope").value="custom"; render(); });
+$("when").addEventListener("change",()=>{ liveMode=false; render(); });
+["ra","dec"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") render(); }));
+$("csvBtn").addEventListener("click",()=>$("csvFile").click());
+$("csvFile").addEventListener("change",e=>{ const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader(); r.onload=()=>setCSV(r.result,f.name); r.readAsText(f); });
+$("csvReset").addEventListener("click",()=>setCSV(PLACEHOLDER_CSV,"placeholder (built-in)"));
+$("toggleWins").addEventListener("click",()=>{ const w=$("windows"); const hidden=w.style.display==="none";
+  w.style.display=hidden?"":"none"; $("toggleWins").textContent=hidden?"Hide list":"Show list";
+  $("toggleWins").setAttribute("aria-expanded",String(hidden)); });
+$("openSite").addEventListener("click",e=>{ e.preventDefault(); const d=$("siteAdv"); d.open=true; d.scrollIntoView({behavior:"smooth",block:"start"}); });
+$("airmass").addEventListener("mousemove",onAmMove);
+$("airmass").addEventListener("mouseleave",hideTip);
+window.addEventListener("resize",()=>{ if(SECTORS.length) render(); });
+
+buildScopeSelect();
+$("when").value=fmtISO(Date.now());
+SECTORS=parseCSV(PLACEHOLDER_CSV);
+render();
+</script>
+<script src="js/lookup.js"></script>
+<script src="js/fov.js"></script>
+<script src="js/field.js"></script>
+</body>
+</html>

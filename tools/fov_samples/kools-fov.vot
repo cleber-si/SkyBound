@@ -1,0 +1,3863 @@
+<VOTABLE xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.ivoa.net/xml/VOTable/v1.1" version="1.1" xsi:schemaLocation="http://www.ivoa.net/xml/VOTable/v1.1 http://www.ivoa.net/xml/VOTable/v1.1">
+<RESOURCE ID="KOOLS-IFU FoV" utype="dal:footprint.geom">
+<PARAM datatype="char" arraysize="*" name="TelescopeName" ID="TelescopeName" value="Seimei"/>
+<PARAM datatype="char" arraysize="*" name="InstrumentName" ID="InstrumentName" value="KOOLS-IFU"/>
+<PARAM datatype="char" arraysize="*" name="InstrumentDescription" ID="InstrumentDescription" value="KOOLS-IFU on Seimei"/>
+<PARAM datatype="char" arraysize="*" name="Origin" ID="Origin" value="K. Matsubayashi (Kyoto U.), H. Maehara (NAOJ)"/>
+<PARAM datatype="char" arraysize="*" utype="stc:AstroCoordSystem.CoordFrame.CARTESIAN" name="reference-frame" value="*"/>
+<PARAM name="projection" utype="stc:AstroCoordSystem.CoordFrame.Cart2DRefFrame.projection" datatype="char" arraysize="*" value="TAN"/>
+
+
+<RESOURCE ID="fiber_0" name="shape_0">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-4.4100</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-4.4100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_1" name="shape_1">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-3.9900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_2" name="shape_2">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-4.4100</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-4.4100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_3" name="shape_3">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-3.9900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_4" name="shape_4">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-4.4100</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-4.4100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_5" name="shape_5">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-3.9900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_6" name="shape_6">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-4.4100</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-4.4100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_7" name="shape_7">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-3.9900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_8" name="shape_8">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-4.4100</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-4.4100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_9" name="shape_9">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-3.9900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_10" name="shape_10">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-3.9900</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-4.4100</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-4.4100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_11" name="shape_11">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_12" name="shape_12">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_13" name="shape_13">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_14" name="shape_14">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_15" name="shape_15">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_16" name="shape_16">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_17" name="shape_17">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_18" name="shape_18">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_19" name="shape_19">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_20" name="shape_20">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_21" name="shape_21">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-3.1500</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-3.5700</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_22" name="shape_22">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_23" name="shape_23">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_24" name="shape_24">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_25" name="shape_25">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_26" name="shape_26">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_27" name="shape_27">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_28" name="shape_28">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_29" name="shape_29">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_30" name="shape_30">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_31" name="shape_31">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_32" name="shape_32">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-2.3100</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-2.7300</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_33" name="shape_33">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_34" name="shape_34">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_35" name="shape_35">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_36" name="shape_36">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_37" name="shape_37">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_38" name="shape_38">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_39" name="shape_39">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_40" name="shape_40">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_41" name="shape_41">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_42" name="shape_42">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_43" name="shape_43">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-1.4700</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-1.8900</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_44" name="shape_44">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_45" name="shape_45">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_46" name="shape_46">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_47" name="shape_47">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_48" name="shape_48">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_49" name="shape_49">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_50" name="shape_50">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_51" name="shape_51">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_52" name="shape_52">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_53" name="shape_53">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_54" name="shape_54">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>-0.6300</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-1.0500</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_55" name="shape_55">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>-0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_56" name="shape_56">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_57" name="shape_57">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>-0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_58" name="shape_58">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_59" name="shape_59">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>-0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_60" name="shape_60">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_61" name="shape_61">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>-0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_62" name="shape_62">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_63" name="shape_63">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>-0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_64" name="shape_64">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_65" name="shape_65">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>0.2100</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>-0.2100</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>-0.2100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_66" name="shape_66">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_67" name="shape_67">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_68" name="shape_68">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_69" name="shape_69">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_70" name="shape_70">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_71" name="shape_71">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_72" name="shape_72">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_73" name="shape_73">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_74" name="shape_74">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_75" name="shape_75">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>1.0500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_76" name="shape_76">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>1.0500</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>0.6300</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>0.6300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_77" name="shape_77">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_78" name="shape_78">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_79" name="shape_79">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_80" name="shape_80">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_81" name="shape_81">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_82" name="shape_82">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_83" name="shape_83">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_84" name="shape_84">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_85" name="shape_85">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_86" name="shape_86">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>1.8900</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_87" name="shape_87">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>1.8900</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>1.4700</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>1.4700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_88" name="shape_88">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_89" name="shape_89">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_90" name="shape_90">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_91" name="shape_91">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_92" name="shape_92">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_93" name="shape_93">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_94" name="shape_94">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_95" name="shape_95">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_96" name="shape_96">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_97" name="shape_97">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>2.7300</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_98" name="shape_98">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>2.7300</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>2.3100</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>2.3100</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_99" name="shape_99">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-3.1523</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-4.1223</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-3.8798</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_100" name="shape_100">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-2.4249</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>-3.3948</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-3.1523</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_101" name="shape_101">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-1.6974</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-2.6674</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-2.4249</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_102" name="shape_102">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.9699</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>-1.9399</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-1.6974</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_103" name="shape_103">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>-0.2425</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-1.2124</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>-0.9699</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_104" name="shape_104">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>0.4850</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>-0.4850</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>-0.2425</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_105" name="shape_105">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.2124</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>0.2425</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>0.4850</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_106" name="shape_106">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>1.9399</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>0.9699</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>1.2124</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_107" name="shape_107">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>2.6674</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>1.6974</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>1.9399</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_108" name="shape_108">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>3.3948</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>4.4100</TD>
+</TR>
+<TR>
+<TD>2.4249</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>2.6674</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>3.5700</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+<RESOURCE ID="fiber_109" name="shape_109">
+<TABLE utype="dal:footprint.geom.segment">
+<PARAM datatype="char" name="Shape" arraysize="*" value="Polygon" utype="dal:footprint.geom.segment.shape"/>
+<FIELD unit="arcsec" datatype="double" name="xPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C1"/>
+<FIELD unit="arcsec" datatype="double" name="yPtPosition" utype="stc:AstroCoordArea.Polygon.Vertex.Position.C2"/>
+<DATA>
+<TABLEDATA>
+<TR>
+<TD>4.1223</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>3.9900</TD>
+</TR>
+<TR>
+<TD>3.1523</TD>
+<TD>3.5700</TD>
+</TR>
+<TR>
+<TD>3.3948</TD>
+<TD>3.1500</TD>
+</TR>
+<TR>
+<TD>3.8798</TD>
+<TD>3.1500</TD>
+</TR>
+</TABLEDATA>
+</DATA>
+</TABLE>
+</RESOURCE>
+
+</RESOURCE>
+</VOTABLE>

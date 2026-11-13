@@ -1,0 +1,38 @@
+<?xml version='1.0' encoding='utf-8'?>
+<VOTABLE xmlns="http://www.ivoa.net/xml/VOTable/v1.1" version="1.1">
+  <DESCRIPTION>USER-GENERATED APPROXIMATION: axis-aligned, centered bounding rectangle ONLY. Not an observatory-authored footprint; detector/guide geometry is omitted. Specification: https://www.gemini.edu/sciops/instruments/gmos</DESCRIPTION>
+  <RESOURCE ID="GMOS_N_BBOX_APPROX" name="GMOS-N (APPROX BOUNDING BOX)" utype="ivoa:characterization/[ucd=pos]/coverage/support">
+    <PARAM name="FOV Coord Frame" datatype="char" utype="stc:AstroCoordSys/SpaceFrame/SpaceRefFrame" value="J2000.0" />
+    <PARAM name="FOV Coord Flavor" datatype="char" utype="stc:AstroCoordSys/SpaceFrame/CoordFlavor" value="CARTESIAN" />
+    <PARAM name="TelescopeName" datatype="char" arraysize="*" value="Gemini North" />
+    <PARAM name="InstrumentName" datatype="char" arraysize="*" value="GMOS-N" />
+    <PARAM name="Origin" datatype="char" arraysize="*" value="USER-GENERATED APPROXIMATION" />
+    <PARAM name="Rollable" value="true" />
+    <PARAM name="Movable" value="true" />
+    <TABLE ID="bounding_box" name="Approximate bounding box">
+      <PARAM name="Region" value="Polygon" />
+      <FIELD name="VertexRAOffset" datatype="float" unit="arcsec" utype="stc:AstroCoordArea/Region/reg:Polygon/Vertex/Position[1]" />
+      <FIELD name="VertexDecOffset" datatype="float" unit="arcsec" utype="stc:AstroCoordArea/Region/reg:Polygon/Vertex/Position[2]" />
+      <DATA>
+        <TABLEDATA>
+          <TR>
+            <TD>-165.00000</TD>
+            <TD>-165.00000</TD>
+          </TR>
+          <TR>
+            <TD>165.00000</TD>
+            <TD>-165.00000</TD>
+          </TR>
+          <TR>
+            <TD>165.00000</TD>
+            <TD>165.00000</TD>
+          </TR>
+          <TR>
+            <TD>-165.00000</TD>
+            <TD>165.00000</TD>
+          </TR>
+        </TABLEDATA>
+      </DATA>
+    </TABLE>
+  </RESOURCE>
+</VOTABLE>

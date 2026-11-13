@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyBound FoV parser test</title>
+<style>
+  body { margin:0; background:#f7f7f5; color:#1d1d1f; font:15px/1.45 system-ui, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color:#6b6b70; margin:0 0 16px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; background:#fff; }
+  td, th { padding:5px 8px; border-bottom:1px solid #e2e2de; text-align:left; vertical-align:top; }
+  .ok { color:#1f7a3a; font-weight:700; } .bad { color:#a32020; font-weight:700; }
+  #sum { font-size:17px; margin:10px 0 14px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>SkyBound FoV parser test</h1>
+  <p class="sub">Checks <code>js/fov.js</code> on the Aladin FoV files in <code>tools/fov_samples/</code> and on small
+    made-up files. Serve the SkyBound folder (<code>python3 -m http.server</code>) and open
+    <code>http://localhost:8000/tools/fov_test.html</code>: a page opened from disk cannot read the sample files.</p>
+  <div id="sum">running…</div>
+  <table id="out"><tr><th>check</th><th>result</th><th>detail</th></tr></table>
+</main>
+<script src="../js/fov.js"></script>
+<script>
+"use strict";
+const rows = [];
+let nOk = 0, nBad = 0;
+function check(name, ok, detail) {
+  ok ? nOk++ : nBad++;
+  rows.push(`<tr><td>${name}</td><td class="${ok ? "ok" : "bad"}">${ok ? "PASS" : "FAIL"}</td><td>${detail || ""}</td></tr>`);
+}
+const near = (a, b, tol = 0.02) => Math.abs(a - b) <= tol;
+const roles = (f) => f.regions.map((r) => r.role).join(",");
+async function sample(name) {
+  const r = await fetch("fov_samples/" + name);
+  if (!r.ok) throw new Error(`${name}: HTTP ${r.status}`);
+  return FoV.load(await r.text(), name);
+}
+const VOT = (body, top = "") => `<?xml version="1.0"?><VOTABLE xmlns="http://www.ivoa.net/xml/VOTable/v1.1" version="1.1">
+  <RESOURCE ID="x" utype="dal:footprint.geom"><PARAM name="InstrumentName" value="TEST"/>${top}${body}</RESOURCE></VOTABLE>`;
+const POLY = (name, unit, pts) => `<RESOURCE name="${name}"><TABLE><PARAM name="Shape" value="Polygon"/>
+  <FIELD name="xPtPosition" unit="${unit}" datatype="double"/><FIELD name="yPtPosition" unit="${unit}" datatype="double"/>
+  <DATA><TABLEDATA>${pts.map(([x, y]) => `<TR><TD>${x}</TD><TD>${y}</TD></TR>`).join("")}</TABLEDATA></DATA></TABLE></RESOURCE>`;
+const CIRC = (name, unit, cx, cy, r) => `<RESOURCE name="${name}"><TABLE><PARAM name="Shape" value="Circle"/>
+  <PARAM name="cxPtPosition" unit="${unit}" value="${cx}"/><PARAM name="cyPtPosition" unit="${unit}" value="${cy}"/>
+  <PARAM name="radius" unit="${unit}" value="${r}"/></TABLE></RESOURCE>`;
+
+(async () => {
+  try {
+    // ---- the official SPARC4 file: its names are swapped, the roles must come from the shapes
+    const s4 = await sample("sparc4_fov.xml"), A = FoV.analyse(s4);
+    check("SPARC4 XML: 4 regions", s4.regions.length === 4, s4.regions.map((r) => r.name).join(", "));
+    check("SPARC4 XML: roles from geometry", roles(s4) === "science,patrol,patrol,guider", roles(s4) + ' ("Guider" holds the centre, "Scientific Detector" is in the annulus)');
+    check("SPARC4 XML: science square 343.8″", near(Math.max(...s4.regions[0].pts.map((p) => p[0])) * 2, 343.8), JSON.stringify(s4.regions[0].pts));
+    check("SPARC4 XML: patrol annulus 569.68–758.68″", A.patrol && A.patrol.rin === 569.68 && A.patrol.rout === 758.68, JSON.stringify(A.patrol));
+    check("SPARC4 XML: guider is a probe at PA ≈ 180° (south)", A.probe && near(A.probePA0, 180, 0.3), `PA ${A.probePA0.toFixed(2)}°`);
+    check("SPARC4 XML: rollable", s4.rollable === true);
+    // the probe follows its own angle; the science field follows the field PA
+    const P = FoV.place(s4, 30, 270), gc = P.guider[0].pts.reduce((a, p) => [a[0] + p[0] / 4, a[1] + p[1] / 4], [0, 0]);
+    check("probe at PA 270° sits to the west", near(FoV.paOf(gc[0], gc[1]), 270, 0.5) && gc[0] < -600, `centre ${gc.map((v) => v.toFixed(1))}`);
+    const c0 = P.science[0].pts[0], [ex, ey] = FoV.rot(-171.9, 171.9, 30);
+    check("science corner turned by the field PA", near(c0[0], ex) && near(c0[1], ey), `${c0} vs ${ex.toFixed(2)},${ey.toFixed(2)}`);
+    // the built-in SPARC4 is described the same way
+    const B = FoV.analyse(FoV.SPARC4);
+    check("built-in SPARC4: probe at 180°, guide angle zero 180°", B.probe && near(B.probePA0, 180, 0.01) && FoV.SPARC4.guide.zero === 180);
+
+    // ---- the other files of the collection
+    const hsc = await sample("Subaru_HSC_FoV.xml");
+    check("HSC (old dialect, VertexRAOffset): 104 CCDs, all science", hsc.regions.length === 104 && hsc.regions.every((r) => r.role === "science" && r.shape === "polygon"),
+          `${hsc.regions.length} regions, ids ${hsc.regions[0].id}…${hsc.regions[103].id}`);
+    check("HSC: one group of 104 for the roles", FoV.groups(hsc).length === 1 && FoV.groups(hsc)[0].idx.length === 104);
+    check("HSC: reaches ~0.88° from the centre", near(FoV.analyse(hsc).extent / 3600, 0.877, 0.01), `${(FoV.analyse(hsc).extent / 60).toFixed(1)}′`);
+    const gm = await sample("GMOS_N_BBOX_APPROX.xml");
+    check("GMOS-N approx (old dialect): 330″ square", gm.regions.length === 1 && near(Math.max(...gm.regions[0].pts.map((p) => p[0])), 165), JSON.stringify(gm.regions[0].pts));
+    const we = await sample("weaveLIFU.vot");
+    check("WEAVE LIFU: 600 circles r = 1.305″", we.regions.length === 600 && we.regions.every((r) => r.shape === "circle" && r.r === 1.305) && we.regions.every((r) => r.role === "science"));
+    const ko = await sample("kools-fov.vot");
+    check("KOOLS-IFU: 110 hexagons", ko.regions.length === 110 && ko.regions.every((r) => r.pts.length === 6));
+    const tr = await sample("triccs.vot");
+    check("TriCCS: 756″ × 450″", tr.regions.length === 1 && near(tr.regions[0].pts[1][0] - tr.regions[0].pts[0][0], 756) && near(tr.regions[0].pts[0][1] - tr.regions[0].pts[2][1], 450));
+    const fo = await sample("focas_ifu_fov.vot");
+    check("FOCAS IFU: 2 regions, listed one by one for the roles", fo.regions.length === 2 && FoV.groups(fo).length === 2, FoV.groups(fo).map((g) => g.label).join(", "));
+
+    const oc = await sample("skybound_orientation_check.xml"), ocP = FoV.place(oc, 90, null);
+    check("orientation check file: square at x = +300″, circle at y = +300″", oc.regions.length === 3 && near(oc.regions[1].pts[0][0], 270) && oc.regions[2].c[1] === 300);
+    const sqc = ocP.science[1].pts.reduce((a, p) => [a[0] + p[0] / 4, a[1] + p[1] / 4], [0, 0]);
+    check("field PA 90°: the +x square goes to the south", near(sqc[0], 0, 0.01) && near(sqc[1], -300, 0.01), sqc.map((v) => v.toFixed(2)).join(", "));
+
+    // ---- mosaics: AstroMosaic's 8 x 8 grid on M42 (SPARC4 as 5.6', 10% overlap), 2026 log
+    const am56 = FoV.build({ nx: 336, ny: 336, scale: 1, instrument: "5.6' square" });
+    const M = FoV.tiles(am56, 8, 8, 10, 0);
+    const hms = (ra) => { let s = Math.round(ra / 15 * 3600 * 100) / 100, h = Math.floor(s / 3600); s -= h * 3600; const m = Math.floor(s / 60); return `${String(h).padStart(2, "0")} ${String(m).padStart(2, "0")} ${(s - m * 60).toFixed(2).padStart(5, "0")}`; };
+    const dms = (d) => { const g = d < 0 ? "-" : "+"; let s = Math.round(Math.abs(d) * 3600 * 100) / 100, D = Math.floor(s / 3600); s -= D * 3600; const m = Math.floor(s / 60); return `${g}${String(D).padStart(2, "0")} ${String(m).padStart(2, "0")} ${(s - m * 60).toFixed(2).padStart(5, "0")}`; };
+    const AMO = { A1: ["05 36 28.15", "-05 05 49.60"], H1: ["05 34 06.46", "-05 05 49.60"], D4: ["05 35 27.42", "-05 20 56.80"],
+                  E5: ["05 35 07.19", "-05 25 59.20"], A8: ["05 36 28.22", "-05 41 06.40"], H8: ["05 34 06.38", "-05 41 06.40"] };
+    const toS = (t) => { const [a, b, c] = t.trim().split(/\s+/).map(Number); return (a * 3600 + b * 60 + c) * (t.trim()[0] === "-" ? -1 : 1); };
+    let worst = 0, cells = [];
+    for (const [lab, [r0, d0]] of Object.entries(AMO)) {
+      const t = M.tiles.find((q) => q.label === lab), [ra, dec] = FoV.fromTangent(t.e, t.n, 5.58814 * 15, -5.39111);
+      const dra = (toS(hms(ra)) - toS(r0)) * 15 * Math.cos(dec * Math.PI / 180), ddec = Math.abs(toS(dms(dec))) - Math.abs(toS(d0));
+      worst = Math.max(worst, Math.hypot(dra, ddec));
+      cells.push(`${lab} ${hms(ra)} ${dms(dec)}`);
+    }
+    check("mosaic: AstroMosaic's M42 8 × 8 grid within 0.5″", worst < 0.5, `worst ${worst.toFixed(2)}″ · ${cells.join(" · ")}`);
+    check("mosaic: step 302.4″, columns A→H east to west, rows 1→8 north to south",
+          near(M.sx, 302.4) && M.tiles[0].label === "A1" && M.tiles[0].e > 0 && M.tiles[0].n > 0 && M.tiles[63].label === "H8" && M.tiles[63].e < 0);
+    check("mosaic: serpentine order", M.tiles.find((q) => q.label === "H1").order === 8 && M.tiles.find((q) => q.label === "H2").order === 9 && M.tiles.find((q) => q.label === "A2").order === 16);
+    const MR = FoV.tiles(am56, 2, 1, 0, 90);                    // PA 90: the row runs north-south
+    check("mosaic: the grid turns with the field PA", near(MR.tiles[0].e, 0) && near(MR.tiles[0].n, -168), JSON.stringify(MR.tiles.map((q) => [q.label, q.e.toFixed(1), q.n.toFixed(1)])));
+    check("mosaic: tiles needed for a size", FoV.tilesFor(40 * 60, 347, 295) === 8 && FoV.tilesFor(300, 347, 295) === 1 && FoV.colName(26) === "AA");
+
+    // ---- made-up files: units, circles, roles, errors
+    const am = FoV.load(VOT(POLY("chip", "arcmin", [[-1, -1], [1, -1], [1, 1], [-1, 1], [-1, -1]])), "am.xml");
+    check("arcmin units → arcsec; closing vertex dropped", am.regions[0].pts.length === 4 && am.regions[0].pts[1][0] === 60, JSON.stringify(am.regions[0].pts));
+    const dg = FoV.load(VOT(CIRC("field", "deg", 0, 0, 0.5)), "deg.xml");
+    check("deg units on a circle", dg.regions[0].r === 1800);
+    const pr = FoV.load(VOT(POLY("CCD", "arcsec", [[-100, -100], [100, -100], [100, 100], [-100, 100]])
+      + CIRC("inner", "arcsec", 0, 0, 300) + CIRC("outer", "arcsec", 0, 0, 500)
+      + POLY("box", "arcsec", [[350, -40], [430, -40], [430, 40], [350, 40]])), "probe.xml");
+    const PA = FoV.analyse(pr);
+    check("made-up probe: found by geometry, at PA 90° (east)", roles(pr) === "science,patrol,patrol,guider" && PA.probe && near(PA.probePA0, 90), roles(pr));
+    const fx = FoV.load(VOT(POLY("CCD", "arcsec", [[-100, -100], [100, -100], [100, 100], [-100, 100]])
+      + POLY("Guide camera", "arcsec", [[200, 200], [260, 200], [260, 260], [200, 260]])), "fixed.xml");
+    check("a guider named so, without a patrol annulus: fixed guider", roles(fx) === "science,guider" && !FoV.analyse(fx).probe, roles(fx));
+    const gc2 = FoV.load(VOT(POLY("Guider", "arcsec", [[-100, -100], [100, -100], [100, 100], [-100, 100]])), "g.xml");
+    check("a region named Guider that holds the centre stays science", roles(gc2) === "science");
+    const bad = (t) => { try { FoV.load(t, "x"); return "no error"; } catch (e) { return e.message; } };
+    check("not XML", /not valid XML/.test(bad("<VOTABLE><oops></VOTABLE>")), bad("<VOTABLE><oops></VOTABLE>"));
+    check("XML but not a VOTable", /not a VOTable/.test(bad("<html/>")), bad("<html/>"));
+    check("no shape", /No shape/.test(bad(VOT(""))), bad(VOT("")));
+    check("unsupported shape is reported", /not supported/.test(bad(VOT('<RESOURCE><TABLE><PARAM name="Shape" value="Box"/></TABLE></RESOURCE>'))));
+    // ---- JSON round trip, containment
+    const back = FoV.load(FoV.toJSON(s4), "s4.json");
+    check("SkyBound JSON round trip", JSON.stringify(back.regions) === JSON.stringify(s4.regions.map(({ name, role, shape, pts, c, r }) => (shape === "circle" ? { name, role, shape, c, r } : { name, role, shape, pts }))));
+    check("JSON without the key is refused", /not a SkyBound FoV/.test(bad('{"regions": []}')));
+    const sq = FoV.place(am, 0, null).science[0];
+    check("contains: inside, outside, bounding box", FoV.contains(sq, 10, 10) && !FoV.contains(sq, 70, 0) && FoV.contains(dg.regions[0], 1000, 1000) === true && !FoV.contains(dg.regions[0], 1300, 1300));
+  } catch (e) {
+    check("test run", false, String(e && e.message || e));
+  }
+  document.getElementById("out").insertAdjacentHTML("beforeend", rows.join(""));
+  document.getElementById("sum").innerHTML = nBad ? `<span class="bad">${nBad} failed</span>, ${nOk} passed` : `<span class="ok">all ${nOk} passed</span>`;
+  document.title = (nBad ? "FAIL " : "PASS ") + document.title;
+})();
+</script>
+</body>
+</html>
