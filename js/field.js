@@ -71,40 +71,70 @@ const Field = (() => {
   }
 
   const START = "<code>python3 s4field/s4field.py --serve</code>";
+  const REPO = "https://github.com/cleber-si/SkyBound";
   function setStatus(kind, word, html) {
     el("fStatus").innerHTML = `<span class="pill ${kind}">${word}</span><span>${html}</span>`;
-    const a = el("fRetry");
-    if (a) a.addEventListener("click", (ev) => { ev.preventDefault(); ping(); });
-    const on = el("fHelperOn"), off = el("fHelperOff");
-    if (on) on.addEventListener("click", async (ev) => {
-      ev.preventDefault();
-      setHelper(true);
-      if (await ping() && st.computed) { st.key = null; compute(true); }
-    });
-    if (off) off.addEventListener("click", (ev) => { ev.preventDefault(); setHelper(false); ping(); });
   }
-  const DOWN_LOCAL = `not running. From the SkyBound folder run ${START}, then <a href="#" id="fRetry">check again</a>.`;
-  const DOWN_HTML = LOCAL_PAGE ? DOWN_LOCAL
-    : DOWN_LOCAL.replace(/\.$/, "") + `, or <a href="#" id="fHelperOff">stop using it</a>.`;
-  const OFF_HTML = `comparison stars come from the s4field helper, a program you run on your own computer (${START}). `
-    + `<a href="#" id="fHelperOn">Use my local helper</a> · your browser will ask to let this site reach apps on this device: allow it.`;
+  // how to get the helper running (the hosted page: the visitor may not have SkyBound's files)
+  const INSTALL = `<details class="hlp-how"><summary>How to install it</summary><ol>
+      <li>Download SkyBound (<a href="${REPO}/archive/refs/heads/main.zip" target="_blank" rel="noopener">zip</a>,
+        or <code>git clone ${REPO}.git</code>) and unpack it.</li>
+      <li>Have Python 3 with numpy, astropy and matplotlib: <code>pip install numpy astropy matplotlib</code>.</li>
+      <li>In the SkyBound folder run ${START} and leave it running. It answers only this computer, and keeps
+        the Gaia stars it downloads in <code>cones/</code> (so a target works offline afterwards).</li>
+      <li>Click <b>Connect</b> here. If your browser asks whether this site may reach apps or devices on this computer,
+        allow it.</li></ol></details>`;
+  const btn = (id, text, primary) => `<button type="button" class="${primary ? "btn-primary" : "btn-ghost"} btn-sm hlp-btn" id="${id}">${text}</button>`;
+  const offHtml = () => `<b>Comparison stars</b> are computed by <b>s4field</b>, a small Python program that runs on your own
+      computer. Everything else in SkyBound works without it. ${btn("fHelperOn", "Connect to s4field", true)}${INSTALL}`;
+  const lookingHtml = () => `looking for s4field on this computer… If it isn't running, start it now: ${START}`
+      + (LOCAL_PAGE ? "" : ". If your browser asks to let this site reach apps or devices on this computer, <b>allow</b> it")
+      + `. SkyBound connects by itself. ${LOCAL_PAGE ? "" : btn("fHelperOff", "Cancel")}${LOCAL_PAGE ? "" : INSTALL}`;
+  const downHtml = () => (LOCAL_PAGE
+    ? `not running. From the SkyBound folder run ${START}, then ${btn("fRetry", "Check again")}`
+    : `s4field could not be reached on this computer. Is it running (${START})? If you blocked this site from
+       reaching apps on this computer, allow it again in the site settings (the icon left of the address).
+       ${btn("fRetry", "Try again", true)} ${btn("fHelperOff", "Don't use it")}${INSTALL}`);
+  const okHtml = (js) => `s4field ${esc(js.s4field)} · ${js.cached.length} cached cone${js.cached.length === 1 ? "" : "s"}`
+      + (LOCAL_PAGE ? "" : ` ${btn("fHelperOff", "Disconnect")}`);
 
-  async function ping() {
+  // no answer: "not connected" if the user hasn't turned the helper on, else "not reachable"
+  // (unless SkyBound is still looking for it after a Connect)
+  function noHelperStatus() {
+    if (!(st.helperPref ?? helperOn())) setStatus("off", "NOT CONNECTED", offHtml());
+    else if (Date.now() >= (st.pollUntil || 0)) setStatus("bad", "NO HELPER", downHtml());
+  }
+
+  // the buttons of the status line (rebuilt with it)
+  function statusClick(ev) {
+    const id = ev.target.id;
+    if (id === "fHelperOn") { setHelper(true); ping(true); }
+    else if (id === "fRetry") ping(true);
+    else if (id === "fHelperOff") { setHelper(false); clearTimeout(st.pollTimer); ping(); }
+  }
+
+  // `look`: the user asked (Connect, Try again): keep looking for 3 minutes, so starting
+  // s4field or allowing the browser's prompt is enough, with no further click
+  async function ping(look) {
+    clearTimeout(st.pollTimer);
     if (!(st.helperPref ?? helperOn())) {     // a hosted page, helper not turned on: don't knock
-      setStatus("off", "HELPER OFF", OFF_HTML);
+      setStatus("off", "NOT CONNECTED", offHtml());
       return false;
     }
-    setStatus("wait", "…", "checking the s4field helper");
+    if (look === true) st.pollUntil = Date.now() + 180000;
+    const polling = Date.now() < (st.pollUntil || 0);
+    if (!polling) setStatus("wait", "…", "checking the s4field helper");
     try {
       const js = await api("/api/status", 5000);
       st.helper = js.s4field;
+      st.pollUntil = 0;
       if (!verOK(js.s4field)) {
         setStatus("bad", "OLD HELPER", `s4field ${esc(js.s4field)} is running, but this page needs ${MIN_HELPER} or newer. `
-          + `Stop it (Ctrl-C) and start the one in this SkyBound folder: ${START} `
-          + `(copy your old <code>cones/</code> folder here to keep its downloads), then <a href="#" id="fRetry">check again</a>.`);
+          + `Stop it (Ctrl-C) and start the one in ${LOCAL_PAGE ? "this SkyBound folder" : `a fresh download of SkyBound (<a href="${REPO}/archive/refs/heads/main.zip">zip</a>)`}: ${START} `
+          + `(copy your old <code>cones/</code> folder there to keep its downloads), then ${btn("fRetry", "Check again")}`);
         return false;
       }
-      setStatus("ok", "HELPER", `s4field ${esc(js.s4field)} · ${js.cached.length} cached cone${js.cached.length === 1 ? "" : "s"}`);
+      setStatus("ok", "HELPER", okHtml(js));
       if (st.js && st.js.nohelper) { st.key = null; compute(true); }   // drawn without it: now with its stars
       // a reduced (GAVO) cone, or one too small for a loaded FoV, is shown: the helper fetches
       // the better one in the background; when its cache changes, compute again; meanwhile
@@ -120,9 +150,28 @@ const Field = (() => {
       if (waiting) st.liteTimer = setTimeout(ping, 60000);
       return true;
     } catch (e) {
-      setStatus("bad", "NO HELPER", DOWN_HTML);
+      if (Date.now() < (st.pollUntil || 0)) {
+        setStatus("wait", "LOOKING", lookingHtml());
+        st.pollTimer = setTimeout(() => ping(), 3000);
+      } else noHelperStatus();
       return false;
     }
+  }
+
+  // a <select> sized to its shown option, as the label is drawn (letter-spacing, capitals);
+  // browsers size it by the plain option text, which cuts "TOI-706" to "TOI-70"
+  function fitSelect(sel) {
+    const o = sel.options[sel.selectedIndex];
+    if (!o) return;
+    const cs = getComputedStyle(sel), m = document.createElement("span");
+    m.style.cssText = `position:absolute;visibility:hidden;white-space:pre;font-style:${cs.fontStyle};font-weight:${cs.fontWeight};`
+      + `font-size:${cs.fontSize};font-family:${cs.fontFamily};letter-spacing:${cs.letterSpacing};text-transform:${cs.textTransform}`;
+    m.textContent = o.text;
+    document.body.appendChild(m);
+    const px = (k) => parseFloat(cs[k]) || 0;
+    sel.style.width = Math.ceil(m.getBoundingClientRect().width + px("paddingLeft") + px("paddingRight")
+                                + px("borderLeftWidth") + px("borderRightWidth") + 4) + "px";
+    m.remove();
   }
 
   /* ---- coordinates --------------------------------------------------------- */
@@ -388,7 +437,7 @@ const Field = (() => {
                                                                     // again), but keep following the selection
       }
       if (e.message === "HELPER_DOWN") {   // SPARC4 still drawn: its footprint and guider on the sky image
-        setStatus("bad", "NO HELPER", DOWN_HTML);
+        noHelperStatus();
         st.key = key; st.computed = true; st.lastTarget = fieldTarget();
         drawGeneric(genericFrom(null));
       }
@@ -504,7 +553,7 @@ const Field = (() => {
         ping();
       } catch (e) {
         if (e.message !== "HELPER_DOWN") throw e;
-        setStatus("bad", "NO HELPER", DOWN_HTML);
+        noHelperStatus();
         js = genericFrom(null);
         st.rec = null;
       }
@@ -2211,6 +2260,11 @@ ${res.join("\n")}
       if (ev.target.id === "nfCancel") newFovForm(false);
       if (ev.target.id === "nfMake") makeNewFov();
     });
+    el("fStatus").addEventListener("click", statusClick);
+    // a target dropdown is as wide as the name it shows (its label is spaced capitals)
+    new MutationObserver(() => document.querySelectorAll("#fSummary .cd-tsel").forEach(fitSelect))
+      .observe(el("fSummary"), { childList: true, subtree: true });
+    document.addEventListener("change", (ev) => { if (ev.target.matches && ev.target.matches(".cd-tsel")) fitSelect(ev.target); });
     st.fov = FoV.selected();
     fovOptions();
     restore();
