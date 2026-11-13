@@ -73,7 +73,7 @@ const Hips = (() => {
   }
 
   /* ---- survey properties (CDS MocServer), kept in this browser ------------- */
-  const STORE = "skybound.hips.v1", MAXAGE = 30 * 86400e3;
+  const STORE = "skybound.hips.v2", MAXAGE = 30 * 86400e3;
   const MOCSERVERS = ["https://alasky.cds.unistra.fr/MocServer/query", "https://alaskybis.cds.unistra.fr/MocServer/query"];
   function cacheGet(id) {
     try {
@@ -88,14 +88,39 @@ const Hips = (() => {
       localStorage.setItem(STORE, JSON.stringify(all));
     } catch (e) { /* kept for this visit */ }
   }
-  // where some surveys live, for when the MocServer cannot be reached: their own
-  // properties file then gives the order and the tile format
+  // where CDS keeps some surveys: their own properties file (next to the tiles)
+  // gives the order and the tile format, with no MocServer query
   const KNOWN = {
     "CDS/P/DSS2/red": "https://alasky.cds.unistra.fr/DSS/DSS2Merged",
+    "CDS/P/DSS2/blue": "https://alasky.cds.unistra.fr/DSS/DSS2-blue-XJ-S",
     "CDS/P/DSS2/color": "https://alasky.cds.unistra.fr/DSS/DSSColor",
     "CDS/P/2MASS/color": "https://alasky.cds.unistra.fr/2MASS/Color",
+    "CDS/P/allWISE/color": "https://alasky.cds.unistra.fr/AllWISE/RGB-W4-W2-W1",
     "CDS/P/PanSTARRS/DR1/color-z-zg-g": "https://alasky.cds.unistra.fr/Pan-STARRS/DR1/color-z-zg-g",
     "CDS/P/Skymapper/DR4/color": "https://alasky.cds.unistra.fr/Skymapper/DR4/CDS_P_Skymapper_DR4_color",
+  };
+  // CDS's tile servers under their current names, CDS first, each once; CDS's
+  // own servers get their mirror (alaskybis) as the second choice
+  function serverList(list) {
+    const out = [];
+    for (let u of list) {
+      u = String(u).trim().replace(/\/+$/, "").replace(/^http:/, "https:")
+        .replace("//alasky.u-strasbg.fr/", "//alasky.cds.unistra.fr/").replace("//alaskybis.u-strasbg.fr/", "//alaskybis.cds.unistra.fr/");
+      if (!/^https:\/\//.test(u)) continue;
+      if (!out.includes(u)) out.push(u);
+      const bis = u.replace("//alasky.cds.unistra.fr/", "//alaskybis.cds.unistra.fr/");
+      if (bis !== u && !out.includes(bis)) out.push(bis);
+    }
+    const cds = (u) => /\/\/alasky(bis)?\.cds\.unistra\.fr\//.test(u) ? 0 : 1;
+    return out.sort((a, b) => cds(a) - cds(b));
+  }
+  const parseProps = (txt) => {
+    const rec = {};
+    for (const line of txt.split(/\r?\n/)) {
+      const m = line.match(/^\s*([\w.]+)\s*=\s*(.*?)\s*$/);
+      if (m && !(m[1] in rec)) rec[m[1]] = m[2];
+    }
+    return rec;
   };
   async function getJSON(url, ms, text) {
     const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
@@ -113,27 +138,25 @@ const Hips = (() => {
     if (hit) { mem.set(id, hit); return hit; }
     const job = (async () => {
       let rec = null, err = null;
-      for (const ms of MOCSERVERS) {
+      if (KNOWN[id]) {                             // the survey's own properties file
+        for (const base of serverList([KNOWN[id]])) {
+          try {
+            rec = { ...parseProps(await getJSON(`${base}/properties`, 10000, true)), hips_service_url: KNOWN[id] };
+            break;
+          } catch (e) { err = e; }
+        }
+      }
+      for (const ms of rec ? [] : MOCSERVERS) {
         try {
           const js = await getJSON(`${ms}?ID=${encodeURIComponent(id)}&get=record&fmt=json`, 12000);
           rec = Array.isArray(js) ? js[0] : js;
           if (rec) break;
         } catch (e) { err = e; }
       }
-      if (!rec && KNOWN[id]) {                     // the survey's own properties file
-        try {
-          const txt = await getJSON(`${KNOWN[id]}/properties`, 12000, true);
-          rec = { hips_service_url: KNOWN[id] };
-          for (const line of txt.split(/\r?\n/)) {
-            const m = line.match(/^\s*([\w.]+)\s*=\s*(.*?)\s*$/);
-            if (m && !(m[1] in rec)) rec[m[1]] = m[2];
-          }
-        } catch (e) { err = e; }
-      }
       if (!rec) throw new Error(`no properties for ${id}${err ? ` (${err.message})` : ""}`);
       const one = (v) => (Array.isArray(v) ? v[0] : v);
-      const urls = Object.keys(rec).filter((k) => /^hips_service_url(_\d+)?$/.test(k)).sort()
-        .map((k) => String(one(rec[k])).replace(/\/+$/, "").replace(/^http:/, "https:"));
+      const urls = serverList([...(KNOWN[id] ? [KNOWN[id]] : []),
+        ...Object.keys(rec).filter((k) => /^hips_service_url(_\d+)?$/.test(k)).sort().map((k) => one(rec[k]))]);
       const fmt = String(one(rec.hips_tile_format) || "jpeg").toLowerCase();
       const p = { urls, order: parseInt(one(rec.hips_order), 10) || 9, width: parseInt(one(rec.hips_tile_width), 10) || 512,
                   ext: /jpe?g/.test(fmt) ? "jpg" : /png/.test(fmt) ? "png" : "jpg", frame: String(one(rec.hips_frame) || "equatorial") };
@@ -222,7 +245,7 @@ const Hips = (() => {
       const cv = document.createElement("canvas");
       cv.width = cv.height = P;
       const ctx = cv.getContext("2d");
-      ctx.fillStyle = "#000"; ctx.fillRect(0, 0, P, P);
+      // transparent where no tile has arrived (yet): SkyBound's Gaia stars show through
       ctx.imageSmoothingEnabled = true;
       const nside = 2 ** order;
       let drawn = 0, failed = 0, pending = tiles.size, timer = null, last = 0;
@@ -232,12 +255,25 @@ const Hips = (() => {
         const now = Date.now();
         if (!done && now - last < 400) { timer = setTimeout(() => update(false), 400 - (now - last)); return; }
         last = now;
-        if (!drawn) { if (done) onFail(`no ${id} tiles could be loaded`); return; }
+        if (!drawn) { if (done) diagnose(); return; }
         onUpdate(cv, done);
+      };
+      const first = tileUrl(sv.urls[0], order, [...tiles][0], sv.ext);
+      // nothing could be drawn: ask the first tile directly, to say why
+      const diagnose = async () => {
+        let why = "tile server unreachable or blocked";
+        try {
+          const r = await getJSON(first, 10000, true).then(() => ({ ok: true }), (e) => ({ ok: false, msg: e.message }));
+          if (r.ok) why = "tiles arrive but cannot be drawn here";
+          else if (/HTTP 404/.test(r.msg)) why = "no tiles here: outside the survey's sky coverage";
+          else if (/HTTP/.test(r.msg)) why = `tile server answered ${r.msg}`;
+        } catch (e) { /* keep the first guess */ }
+        if (typeof console !== "undefined") console.warn(`SkyBound: ${id}: ${why} (${first})`);
+        if (!stop) onFail(why, first);
       };
       for (const ipix of tiles) {
         const urls = sv.urls.map((b) => tileUrl(b, order, ipix, sv.ext));
-        loadImg(urls, 15000).then((img) => {
+        loadImg(urls, 8000).then((img) => {
           if (stop) return;
           const { face, ix, iy } = pix2xyf(order, ipix);
           // corners of a grid of cells over the tile, on the canvas

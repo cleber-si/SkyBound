@@ -22,9 +22,9 @@ const Field = (() => {
   const SKY_WAIT = 12000;                              // [ms] before the next source is tried as well
   const SKY_STORE = "skybound.sky.v1";
   const SURVEYS = [
+    ["CDS/P/DSS2/color", "DSS2 colour"],
     ["CDS/P/DSS2/red", "DSS2 red"],
     ["CDS/P/DSS2/blue", "DSS2 blue"],
-    ["CDS/P/DSS2/color", "DSS2 colour"],
     ["CDS/P/Skymapper/DR4/color", "SkyMapper DR4 colour · south"],
     ["CDS/P/PanSTARRS/DR1/color-z-zg-g", "Pan-STARRS colour · Dec > −30°"],
     ["CDS/P/DESI-Legacy-Surveys/DR10/color", "Legacy Surveys DR10 colour · patchy"],
@@ -970,8 +970,9 @@ const Field = (() => {
   // the sources, in order: "stsci" (DSS2 red, fastest while the view fits in 60')
   // and "hips" (the survey's tiles)
   function skySources(survey, W) {
-    if (survey !== SURVEYS[0][0]) return ["hips"];
-    return W <= 3600 ? ["stsci", "hips"] : ["hips", "stsci"];
+    if (survey === "CDS/P/DSS2/red") return W <= 3600 ? ["stsci", "hips"] : ["hips", "stsci"];
+    if (survey === "CDS/P/DSS2/color") return ["hips", "stsci"];     // its red half, if CDS fails
+    return ["hips"];
   }
   function ensureSky() {
     clearTimeout(st.skyTimer);
@@ -994,7 +995,8 @@ const Field = (() => {
       const note = (t) => { el("fImgNote").textContent = t; };
       const shown = (img, W, label, done) => {        // an image of this request is on screen
         img.removeAttribute("data-loading");
-        img.setAttribute("opacity", "0.92");
+        img.setAttribute("opacity", "1");
+        el("fImgNote").title = "";
         if (!req.done) {
           req.done = true;
           clearTimeout(st.skyWait);
@@ -1006,8 +1008,9 @@ const Field = (() => {
         note(`${label} · N up, E left${done ? "" : " · loading…"}`);
         if (st.imgOK !== true) { st.imgOK = true; redraw(); }
       };
-      const failed = (why) => {
+      const failed = (why, url) => {
         if (req.done || st.sky !== req) return;
+        if (url) el("fImgNote").title = `first tile tried: ${url}`;
         req.failed++;
         if (req.started < order.length) { tryFrom(req.started); return; }
         if (req.failed < order.length) return;           // another source is still on its way
@@ -1063,11 +1066,28 @@ const Field = (() => {
             img.addEventListener("load", () => { if (prev) URL.revokeObjectURL(prev); }, { once: true });
             img.setAttribute("href", u2);
             if (st.survey === survey) shown(img, req.W, `${name} (CDS HiPS)`, done);
-          }, "image/jpeg", 0.88);
-        }, (why) => failed(why));
+          }, "image/png");                  // PNG: transparent where tiles are still missing
+        }, (why, url) => failed(why, url));
       };
       tryFrom(0);
     }, 300);
+  }
+
+  // the Gaia stars, under the sky image: they show wherever the image is not (yet)
+  // there, and everywhere when there is no image at all. Only those in view.
+  function gaiaLayer(js) {
+    const lay = el("fLayStars"), v = st.v;
+    if (!lay) return;
+    const sk = js && js.sky;
+    if (!sk || !v) { lay.innerHTML = ""; return; }
+    const out = [], half = v.half, m = half * 1.6;
+    for (let i = 0; i < sk.E.length; i++) {
+      const x = -sk.E[i], y = -sk.N[i];
+      if (Math.abs(x - v.x) > m || Math.abs(y - v.y) > m) continue;
+      const r = Math.max(1.2, (17.5 - sk.G[i]) * 0.9) * half / 320;
+      out.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}"/>`);
+    }
+    lay.innerHTML = `<g fill="#cbd5e1" opacity=".85">${out.join("")}</g>`;
   }
 
   function inField(px, py) {            // a point (E, N from the field centre) inside the common area
@@ -1133,14 +1153,7 @@ const Field = (() => {
     const shape = (rg, attrs) => (rg.shape === "circle"
       ? `<circle cx="${-rg.c[0]}" cy="${-rg.c[1]}" r="${rg.r}" ${attrs}/>`
       : `<polygon points="${pts(rg)}" ${attrs}/>`);
-    // Gaia stars when there is no sky image
-    if (st.imgOK !== true && js.sky) {
-      const sk = js.sky;
-      for (let i = 0; i < sk.E.length; i++) {
-        const r = Math.max(1.2, (17.5 - sk.G[i]) * 0.9) * half / 320;
-        out.push(`<circle cx="${-sk.E[i]}" cy="${-sk.N[i]}" r="${r.toFixed(2)}" fill="#cbd5e1" opacity=".85"/>`);
-      }
-    }
+    gaiaLayer(js);
     // where the helper's star list ends, when the FoV reaches beyond it
     const coneR = coneRadius(js), ranked = !!js.ranked;
     if (js.sky) {
@@ -1318,14 +1331,7 @@ const Field = (() => {
     const half = v.half, fs = half * 0.042;
     const fx = -st.fo.e, fy = -st.fo.n;                       // field centre, SVG coords
     const out = [];
-    // Gaia stars when there is no sky image
-    if (st.imgOK !== true && js.sky) {
-      const sk = js.sky;
-      for (let i = 0; i < sk.E.length; i++) {
-        const r = Math.max(1.2, (17.5 - sk.G[i]) * 0.9) * half / 320;
-        out.push(`<circle cx="${-sk.E[i]}" cy="${-sk.N[i]}" r="${r.toFixed(1)}" fill="#cbd5e1" opacity=".85"/>`);
-      }
-    }
+    gaiaLayer(js);
     // comparison search radius (around the target)
     if (!js.target.blank) out.push(`<circle cx="0" cy="0" r="${js.settings.search_radius_arcmin * 60}" fill="none" stroke="rgba(255,255,255,.35)" stroke-dasharray="6 6" stroke-width="1" ${NS} pointer-events="none"/>`);
     // recommended field centre, when the field was moved
@@ -1807,6 +1813,7 @@ const Field = (() => {
     ensureSky();
     svg.setAttribute("font-family", "Inter, system-ui, sans-serif");
     el("fLay").innerHTML = out.join("");
+    gaiaLayer(js.sky ? js : null);
     mosReadouts(T);
   }
 
