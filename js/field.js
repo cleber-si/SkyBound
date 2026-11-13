@@ -18,7 +18,8 @@ const Field = (() => {
   // sky images: CDS hips2fits cutouts of a HiPS survey, on the target's own tangent
   // plane (so they line up with the Gaia stars at any size), following the view;
   // STScI's DSS2 red (at most 60') if CDS cannot be reached
-  const SKY_MIN = 20, SKY_MAX = 360, SKY_PX = 1000;    // [arcmin], [arcmin], pixels across
+  const SKY_MIN = 20, SKY_MAX = 360, SKY_PX = 800;     // [arcmin], [arcmin], pixels across
+  const SKY_WAIT = 10000;                              // [ms] before another source is tried as well
   const SKY_STORE = "skybound.sky.v1";
   const SURVEYS = [
     ["CDS/P/DSS2/red", "DSS2 red"],
@@ -955,21 +956,26 @@ const Field = (() => {
     el("fLayImg").innerHTML = "";
     ensureSky();
   }
-  // the cutout's URL: W ["] square centred on the view (cx, cy: SVG = −E, −N), on the
-  // target's tangent plane; source 0, 1: the CDS mirrors; 2: STScI (DSS2 red, centred on the view)
+  // the cutout's URL: W ["] square centred on the view (cx, cy: SVG = −E, −N).
+  // Source 0, 1: the CDS mirrors (hips2fits, TAN at the view's centre); 2: STScI
+  // (DSS2 red only, at most 60′). Over a degree or so a TAN image centred on the
+  // view and the target's tangent plane differ by under a pixel on screen.
   function skyUrl(src, W, cx, cy, js) {
+    const [ra, dec] = fromTangent(-cx, -cy, js.target.ra, js.target.dec);
     if (src === 2) {
-      const am = Math.min(60, Math.ceil(W / 60)), [ra, dec] = fromTangent(-cx, -cy, js.target.ra, js.target.dec);
+      const am = Math.min(60, Math.ceil(W / 60));
       return { url: "https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red"
         + `&r=${ra.toFixed(5)}&d=${dec.toFixed(5)}&e=J2000&h=${am}&w=${am}&f=gif`, W: am * 60, name: "DSS2 red (STScI)" };
     }
-    const P = SKY_PX, sc = W / P, r6 = (x) => Math.round(x * 1e6) / 1e6;
-    const wcs = { NAXIS: 2, NAXIS1: P, NAXIS2: P, CTYPE1: "RA---TAN", CTYPE2: "DEC--TAN", CUNIT1: "deg", CUNIT2: "deg",
-                  CRVAL1: r6(js.target.ra), CRVAL2: r6(js.target.dec),
-                  CRPIX1: r6((P + 1) / 2 - cx / sc), CRPIX2: r6((P + 1) / 2 + cy / sc),
-                  CDELT1: -sc / 3600, CDELT2: sc / 3600 };
-    return { url: `${H2F[src]}?hips=${encodeURIComponent(skySurvey())}&wcs=${encodeURIComponent(JSON.stringify(wcs))}&format=jpg`,
+    return { url: `${H2F[src]}?hips=${encodeURIComponent(skySurvey())}&ra=${ra.toFixed(5)}&dec=${dec.toFixed(5)}`
+      + `&fov=${(W / 3600).toFixed(4)}&width=${SKY_PX}&height=${SKY_PX}&projection=TAN&coordsys=icrs&format=jpg`,
              W, name: `${surveyName(skySurvey())} (CDS)` };
+  }
+  // which sources, in order: DSS2 red comes fastest from STScI while the view fits
+  // in its 60′; every other survey (and larger views) from CDS
+  function skySources(survey, W) {
+    if (survey !== SURVEYS[0][0]) return [0, 1];
+    return W <= 3600 ? [2, 0, 1] : [0, 1, 2];
   }
   function ensureSky() {
     clearTimeout(st.skyTimer);
@@ -980,35 +986,53 @@ const Field = (() => {
       if (cur && Math.abs(v.x - cur.x) + need <= cur.W / 2 && Math.abs(v.y - cur.y) + need <= cur.W / 2) return;
       if (cur && cur.W >= SKY_MAX * 60 && Math.abs(v.x - cur.x) < 1 && Math.abs(v.y - cur.y) < 1) return;
       const am = Math.min(SKY_MAX, Math.max(SKY_MIN, Math.ceil((v.half * 2 * 1.6) / 60)));
-      const survey = skySurvey(), req = { x: v.x, y: v.y, W: am * 60, survey };
+      const survey = skySurvey(), req = { x: v.x, y: v.y, W: am * 60, survey, done: false, failed: 0, started: 0 };
+      const layer = el("fLayImg");
+      // images still on their way for an earlier view: stop them, so they don't hold
+      // the browser's connections while the new one waits
+      for (const old of [...layer.children]) if (old.getAttribute("data-loading")) { old.setAttribute("href", ""); old.remove(); }
+      clearTimeout(st.skyWait);
       st.sky = req;
-      const tryFrom = (src) => {
-        if (st.sky !== req) return;                  // the view or the survey moved on
-        const u = skyUrl(src, req.W, req.x, req.y, js), W = u.W;
+      const order = skySources(survey, req.W);
+      const finish = () => {                         // every source failed
+        if (!layer.querySelector("image:not([data-loading])")) {
+          st.imgOK = false;
+          el("fImgNote").textContent = st.js && st.js.sky ? "no sky image (offline?) · Gaia stars drawn instead" : "no sky image (offline?)";
+          redraw();
+        } else el("fImgNote").textContent = `${surveyName(survey)} · could not load more sky here`;
+        // st.sky keeps the failed area, so it is not retried until the view moves past it
+      };
+      const tryFrom = (k) => {
+        if (st.sky !== req || req.done || k >= order.length || k < req.started) return;
+        req.started = k + 1;
+        const src = order[k], u = skyUrl(src, req.W, req.x, req.y, js), W = u.W;
         const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-        for (const [k, val] of [["x", req.x - W / 2], ["y", req.y - W / 2], ["width", W], ["height", W],
-                                ["preserveAspectRatio", "none"], ["opacity", "0"], ["href", u.url]]) img.setAttribute(k, val);
+        for (const [key, val] of [["x", req.x - W / 2], ["y", req.y - W / 2], ["width", W], ["height", W],
+                                  ["preserveAspectRatio", "none"], ["opacity", "0"], ["data-loading", "1"], ["href", u.url]]) img.setAttribute(key, val);
         el("fImgNote").textContent = `${u.name} · N up, E left · loading…`;
+        // slow: try the next source as well; the first to arrive is shown
+        clearTimeout(st.skyWait);
+        st.skyWait = setTimeout(() => tryFrom(k + 1), SKY_WAIT);
         img.addEventListener("load", () => {
-          if (st.survey !== survey) { img.remove(); return; }
+          img.removeAttribute("data-loading");
+          if (req.done || st.survey !== survey) { img.remove(); return; }
+          req.done = true;
+          clearTimeout(st.skyWait);
+          for (const o of [...layer.children]) if (o !== img && o.getAttribute("data-loading")) { o.setAttribute("href", ""); o.remove(); }
           img.setAttribute("opacity", "0.92");
-          for (const old of [...el("fLayImg").children]) if (old !== img && +old.getAttribute("width") <= W) old.remove();
+          for (const old of [...layer.children]) if (old !== img && +old.getAttribute("width") <= W) old.remove();
           el("fImgNote").textContent = `${u.name} · N up, E left`;
-          if (src === 2) st.sky = { ...req, W };       // STScI: a smaller cutout
+          if (st.sky === req && W < req.W) st.sky = { ...req, W };   // STScI: a smaller cutout
           if (st.imgOK !== true) { st.imgOK = true; redraw(); }
         });
         img.addEventListener("error", () => {
           img.remove();
-          const next = src === 0 ? 1 : src === 1 && survey === SURVEYS[0][0] ? 2 : null;
-          if (next != null && st.sky === req) { tryFrom(next); return; }
-          if (!el("fLayImg").children.length) {
-            st.imgOK = false;
-            el("fImgNote").textContent = st.js && st.js.sky ? "no sky image (offline?) · Gaia stars drawn instead" : "no sky image (offline?)";
-            redraw();
-          } else el("fImgNote").textContent = `${surveyName(survey)} · could not load more sky here`;
-          // st.sky keeps the failed area, so it is not retried until the view moves past it
+          if (req.done || st.sky !== req) return;
+          req.failed++;
+          if (req.started < order.length) tryFrom(req.started);
+          else if (req.failed >= order.length) finish();
         });
-        el("fLayImg").appendChild(img);
+        layer.appendChild(img);
       };
       tryFrom(0);
     }, 300);
@@ -1385,6 +1409,7 @@ const Field = (() => {
     } else if (d.mode === "field") {
       const gen = st.js.generic, q = gen ? Math.max(0.01, Math.min(0.5, k)) : 0.5;   // fine steps for small FoVs
       if (d.moved && (!gen || st.js.ranked)) setStale(true);   // the stars shown are the old pointing's until the helper answers
+      if (d.moved) { st.ppaTouched = false; st.guiderTouched = false; }   // a new pointing: its own guide star again
       st.fo = { e: Math.round((d.fo0.e - dx) / q) * q, n: Math.round((d.fo0.n - dy) / q) * q };
       const o = el("fOffVal");
       if (o) o.textContent = fmtOff();
