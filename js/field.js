@@ -15,11 +15,11 @@
 const Field = (() => {
   const BANDS = ["g", "r", "i", "z"];
   const BAND_COL = { g: "#4ade80", r: "#f87171", i: "#c084fc", z: "#fbbf24" };
-  // sky images: CDS hips2fits cutouts of a HiPS survey, on the target's own tangent
-  // plane (so they line up with the Gaia stars at any size), following the view;
-  // STScI's DSS2 red (at most 60') if CDS cannot be reached
-  const SKY_MIN = 20, SKY_MAX = 360, SKY_PX = 800;     // [arcmin], [arcmin], pixels across
-  const SKY_WAIT = 10000;                              // [ms] before another source is tried as well
+  // sky images: a HiPS survey's tiles (js/hips.js) drawn on the target's own tangent
+  // plane, so they line up with the Gaia stars at any size, following the view;
+  // DSS2 red comes from STScI first while the view fits in its 60'
+  const SKY_MIN = 20, SKY_MAX = 360, SKY_PX = 1000;    // [arcmin], [arcmin], pixels across
+  const SKY_WAIT = 12000;                              // [ms] before the next source is tried as well
   const SKY_STORE = "skybound.sky.v1";
   const SURVEYS = [
     ["CDS/P/DSS2/red", "DSS2 red"],
@@ -32,8 +32,6 @@ const Field = (() => {
     ["CDS/P/2MASS/color", "2MASS colour · J H K"],
     ["CDS/P/allWISE/color", "AllWISE colour · infrared"],
   ];
-  const H2F = ["https://alasky.cds.unistra.fr/hips-image-services/hips2fits",
-               "https://alaskybis.cds.unistra.fr/hips-image-services/hips2fits"];
   const surveyName = (id) => (SURVEYS.find((x) => x[0] === id) || [id, id])[1].split(" · ")[0];
   const HELPER = "http://127.0.0.1:8417";
   const MIN_HELPER = "0.13.0";          // ... and any instrument's FoV (POST /api/fov)
@@ -956,26 +954,24 @@ const Field = (() => {
     el("fLayImg").innerHTML = "";
     ensureSky();
   }
-  // the cutout's URL: W ["] square centred on the view (cx, cy: SVG = −E, −N).
-  // Source 0, 1: the CDS mirrors (hips2fits, TAN at the view's centre); 2: STScI
-  // (DSS2 red only, at most 60′). Over a degree or so a TAN image centred on the
-  // view and the target's tangent plane differ by under a pixel on screen.
-  function skyUrl(src, W, cx, cy, js) {
-    const [ra, dec] = fromTangent(-cx, -cy, js.target.ra, js.target.dec);
-    if (src === 2) {
-      const am = Math.min(60, Math.ceil(W / 60));
-      return { url: "https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red"
-        + `&r=${ra.toFixed(5)}&d=${dec.toFixed(5)}&e=J2000&h=${am}&w=${am}&f=gif`, W: am * 60, name: "DSS2 red (STScI)" };
-    }
-    return { url: `${H2F[src]}?hips=${encodeURIComponent(skySurvey())}&ra=${ra.toFixed(5)}&dec=${dec.toFixed(5)}`
-      + `&fov=${(W / 3600).toFixed(4)}&width=${SKY_PX}&height=${SKY_PX}&projection=TAN&coordsys=icrs&format=jpg`,
-             W, name: `${surveyName(skySurvey())} (CDS)` };
+  // (ra, dec) -> arcsec East, North on the target's tangent plane (fromTangent's inverse)
+  function toTangent(ra, dec, ra0, dec0) {
+    const a = (ra - ra0) * D2R, d = dec * D2R, d0 = dec0 * D2R;
+    const den = Math.sin(d0) * Math.sin(d) + Math.cos(d0) * Math.cos(d) * Math.cos(a);
+    return [206264.806 * Math.cos(d) * Math.sin(a) / den,
+            206264.806 * (Math.cos(d0) * Math.sin(d) - Math.sin(d0) * Math.cos(d) * Math.cos(a)) / den];
   }
-  // which sources, in order: DSS2 red comes fastest from STScI while the view fits
-  // in its 60′; every other survey (and larger views) from CDS
+  // STScI's DSS2 red cutout (at most 60'), centred on the view (cx, cy: SVG = −E, −N)
+  function stsciUrl(W, cx, cy, js) {
+    const [ra, dec] = fromTangent(-cx, -cy, js.target.ra, js.target.dec), am = Math.min(60, Math.ceil(W / 60));
+    return { url: "https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red"
+      + `&r=${ra.toFixed(5)}&d=${dec.toFixed(5)}&e=J2000&h=${am}&w=${am}&f=gif`, W: am * 60 };
+  }
+  // the sources, in order: "stsci" (DSS2 red, fastest while the view fits in 60')
+  // and "hips" (the survey's tiles)
   function skySources(survey, W) {
-    if (survey !== SURVEYS[0][0]) return [0, 1];
-    return W <= 3600 ? [2, 0, 1] : [0, 1, 2];
+    if (survey !== SURVEYS[0][0]) return ["hips"];
+    return W <= 3600 ? ["stsci", "hips"] : ["hips", "stsci"];
   }
   function ensureSky() {
     clearTimeout(st.skyTimer);
@@ -986,53 +982,89 @@ const Field = (() => {
       if (cur && Math.abs(v.x - cur.x) + need <= cur.W / 2 && Math.abs(v.y - cur.y) + need <= cur.W / 2) return;
       if (cur && cur.W >= SKY_MAX * 60 && Math.abs(v.x - cur.x) < 1 && Math.abs(v.y - cur.y) < 1) return;
       const am = Math.min(SKY_MAX, Math.max(SKY_MIN, Math.ceil((v.half * 2 * 1.6) / 60)));
-      const survey = skySurvey(), req = { x: v.x, y: v.y, W: am * 60, survey, done: false, failed: 0, started: 0 };
+      const survey = skySurvey(), req = { x: v.x, y: v.y, W: am * 60, survey, done: false, failed: 0, started: 0, jobs: [] };
       const layer = el("fLayImg");
-      // images still on their way for an earlier view: stop them, so they don't hold
-      // the browser's connections while the new one waits
+      // an earlier view's images still on their way: stop them, so they don't hold
+      // the browser's connections while this one waits
+      if (cur && cur.jobs) for (const j of cur.jobs) j.cancel();
       for (const old of [...layer.children]) if (old.getAttribute("data-loading")) { old.setAttribute("href", ""); old.remove(); }
       clearTimeout(st.skyWait);
       st.sky = req;
-      const order = skySources(survey, req.W);
-      const finish = () => {                         // every source failed
+      const order = skySources(survey, req.W), name = surveyName(survey);
+      const note = (t) => { el("fImgNote").textContent = t; };
+      const shown = (img, W, label, done) => {        // an image of this request is on screen
+        img.removeAttribute("data-loading");
+        img.setAttribute("opacity", "0.92");
+        if (!req.done) {
+          req.done = true;
+          clearTimeout(st.skyWait);
+          for (const j of req.jobs) if (j.img !== img) j.cancel();
+          for (const o of [...layer.children]) if (o !== img && o.getAttribute("data-loading")) { o.setAttribute("href", ""); o.remove(); }
+          for (const o of [...layer.children]) if (o !== img && +o.getAttribute("width") <= W) o.remove();
+          if (st.sky === req && W < req.W) st.sky = { ...req, W };   // STScI: a smaller cutout
+        }
+        note(`${label} · N up, E left${done ? "" : " · loading…"}`);
+        if (st.imgOK !== true) { st.imgOK = true; redraw(); }
+      };
+      const failed = (why) => {
+        if (req.done || st.sky !== req) return;
+        req.failed++;
+        if (req.started < order.length) { tryFrom(req.started); return; }
+        if (req.failed < order.length) return;           // another source is still on its way
         if (!layer.querySelector("image:not([data-loading])")) {
           st.imgOK = false;
-          el("fImgNote").textContent = st.js && st.js.sky ? "no sky image (offline?) · Gaia stars drawn instead" : "no sky image (offline?)";
+          note(`no ${name} image here${why ? ` (${why})` : ""} · Gaia stars drawn instead`);
           redraw();
-        } else el("fImgNote").textContent = `${surveyName(survey)} · could not load more sky here`;
+        } else note(`${name} · could not load more sky here`);
         // st.sky keeps the failed area, so it is not retried until the view moves past it
+      };
+      const newImage = (W) => {
+        const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        for (const [k, val] of [["x", req.x - W / 2], ["y", req.y - W / 2], ["width", W], ["height", W],
+                                ["preserveAspectRatio", "none"], ["opacity", "0"], ["data-loading", "1"]]) img.setAttribute(k, val);
+        layer.appendChild(img);
+        return img;
       };
       const tryFrom = (k) => {
         if (st.sky !== req || req.done || k >= order.length || k < req.started) return;
         req.started = k + 1;
-        const src = order[k], u = skyUrl(src, req.W, req.x, req.y, js), W = u.W;
-        const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-        for (const [key, val] of [["x", req.x - W / 2], ["y", req.y - W / 2], ["width", W], ["height", W],
-                                  ["preserveAspectRatio", "none"], ["opacity", "0"], ["data-loading", "1"], ["href", u.url]]) img.setAttribute(key, val);
-        el("fImgNote").textContent = `${u.name} · N up, E left · loading…`;
-        // slow: try the next source as well; the first to arrive is shown
         clearTimeout(st.skyWait);
-        st.skyWait = setTimeout(() => tryFrom(k + 1), SKY_WAIT);
-        img.addEventListener("load", () => {
-          img.removeAttribute("data-loading");
-          if (req.done || st.survey !== survey) { img.remove(); return; }
-          req.done = true;
-          clearTimeout(st.skyWait);
-          for (const o of [...layer.children]) if (o !== img && o.getAttribute("data-loading")) { o.setAttribute("href", ""); o.remove(); }
-          img.setAttribute("opacity", "0.92");
-          for (const old of [...layer.children]) if (old !== img && +old.getAttribute("width") <= W) old.remove();
-          el("fImgNote").textContent = `${u.name} · N up, E left`;
-          if (st.sky === req && W < req.W) st.sky = { ...req, W };   // STScI: a smaller cutout
-          if (st.imgOK !== true) { st.imgOK = true; redraw(); }
-        });
-        img.addEventListener("error", () => {
-          img.remove();
-          if (req.done || st.sky !== req) return;
-          req.failed++;
-          if (req.started < order.length) tryFrom(req.started);
-          else if (req.failed >= order.length) finish();
-        });
-        layer.appendChild(img);
+        st.skyWait = setTimeout(() => tryFrom(k + 1), SKY_WAIT);   // slow: the next source as well
+        if (order[k] === "stsci") {
+          const u = stsciUrl(req.W, req.x, req.y, js), img = newImage(u.W);
+          const job = { img, cancel: () => { if (img.getAttribute("data-loading")) { img.setAttribute("href", ""); img.remove(); } } };
+          req.jobs.push(job);
+          img.addEventListener("load", () => {
+            if (req.done || st.survey !== survey) { img.remove(); return; }
+            shown(img, u.W, "DSS2 red (STScI)", true);
+          });
+          img.addEventListener("error", () => { img.remove(); failed("STScI"); });
+          img.setAttribute("href", u.url);
+          note("DSS2 red (STScI) · N up, E left · loading…");
+          return;
+        }
+        // HiPS tiles, drawn on a canvas of the cutout; shown as they arrive
+        const P = SKY_PX, sc = req.W / P, x0 = req.x - req.W / 2, y0 = req.y - req.W / 2;
+        const ra0 = js.target.ra, dec0 = js.target.dec;
+        const toRaDec = (u, w) => fromTangent(-(x0 + u * sc), -(y0 + w * sc), ra0, dec0);
+        const toPx = (ra, dec) => { const [e, n] = toTangent(ra, dec, ra0, dec0); return [(-e - x0) / sc, (-n - y0) / sc]; };
+        let img = null, url = null;
+        const job = { img: null, cancel: () => { h.cancel(); if (img && img.getAttribute("data-loading")) { img.remove(); } } };
+        req.jobs.push(job);
+        note(`${name} (CDS HiPS) · N up, E left · loading…`);
+        const h = Hips.draw(survey, P, sc, toRaDec, toPx, (canvas, done) => {
+          if (st.sky !== req && !(st.sky && st.sky.x === req.x && st.sky.W < req.W)) { h.cancel(); return; }
+          canvas.toBlob((blob) => {
+            if (!blob) return;
+            const u2 = URL.createObjectURL(blob);
+            if (!img) { img = newImage(req.W); job.img = img; }
+            const prev = url;
+            url = u2;
+            img.addEventListener("load", () => { if (prev) URL.revokeObjectURL(prev); }, { once: true });
+            img.setAttribute("href", u2);
+            if (st.survey === survey) shown(img, req.W, `${name} (CDS HiPS)`, done);
+          }, "image/jpeg", 0.88);
+        }, (why) => failed(why));
       };
       tryFrom(0);
     }, 300);
@@ -1102,7 +1134,7 @@ const Field = (() => {
       ? `<circle cx="${-rg.c[0]}" cy="${-rg.c[1]}" r="${rg.r}" ${attrs}/>`
       : `<polygon points="${pts(rg)}" ${attrs}/>`);
     // Gaia stars when there is no sky image
-    if (st.imgOK === false && js.sky) {
+    if (st.imgOK !== true && js.sky) {
       const sk = js.sky;
       for (let i = 0; i < sk.E.length; i++) {
         const r = Math.max(1.2, (17.5 - sk.G[i]) * 0.9) * half / 320;
@@ -1287,7 +1319,7 @@ const Field = (() => {
     const fx = -st.fo.e, fy = -st.fo.n;                       // field centre, SVG coords
     const out = [];
     // Gaia stars when there is no sky image
-    if (st.imgOK === false && js.sky) {
+    if (st.imgOK !== true && js.sky) {
       const sk = js.sky;
       for (let i = 0; i < sk.E.length; i++) {
         const r = Math.max(1.2, (17.5 - sk.G[i]) * 0.9) * half / 320;

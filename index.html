@@ -337,7 +337,7 @@
     <div class="sub">Where the mount can go — <em>anytime, anywhere</em>.</div>
   </div>
   <div class="hdr-right">
-    <div class="ver">v0.20.5</div>
+    <div class="ver">v0.20.6</div>
     <div class="sig">By <strong>Cleber Silva</strong> · UFC/MALTED · <a href="https://github.com/cleber-si/skybound" target="_blank" rel="noopener">source</a></div>
   </div>
 </header>
@@ -678,7 +678,7 @@
               <button class="btn-ghost btn-sm" id="fZoomIn" type="button" title="zoom in">+</button>
               <button class="btn-ghost btn-sm" id="fZoomOut" type="button" title="zoom out">−</button>
               <button class="btn-ghost btn-sm" id="fReset" type="button" title="back to the recommended pointing and guide star" hidden>Recommended</button>
-              <select id="fSurvey" class="fld-survey" aria-label="sky image survey" title="the survey behind the field (CDS hips2fits)"></select>
+              <select id="fSurvey" class="fld-survey" aria-label="sky image survey" title="the survey behind the field (HiPS tiles from CDS)"></select>
               <span class="note" id="fImgNote">DSS2 red (CDS) · N up, E left</span>
             </div>
             <svg id="fSvg" xmlns="http://www.w3.org/2000/svg"><g id="fLayImg"></g><g id="fLay"></g></svg>
@@ -721,7 +721,7 @@
       <code>python3 s4field/s4field.py --serve</code> from the SkyBound folder. It needs the network only the first time a target is used
       (Gaia DR3 from the ESA archive, or GAVO's reduced copy when ESA is down); cones are then kept in <code>cones/</code>.
       <i>Basic</i> ranks comparison stars by brightness alone (photon noise, within the ΔV window, default 0.35 mag brighter to 8 mag fainter than the target; no readout trails);
-      <i>Advanced</i> adds exposure times, seeing, sky, Moon and the airmass at the chosen time. The sky image is a survey of your choice (DSS2 red by default) cut out by CDS hips2fits; DSS2 is decades older than Gaia, so
+      <i>Advanced</i> adds exposure times, seeing, sky, Moon and the airmass at the chosen time. The sky image is a survey of your choice (DSS2 red by default) drawn from the survey's HiPS tiles (CDS); DSS2 is decades older than Gaia, so
       fast-moving stars sit away from their markers, which show positions at the observing epoch. Some surveys cover only part of the sky (black elsewhere).
     </div>
   </section>
@@ -1375,6 +1375,7 @@ render();
 </script>
 <script src="js/lookup.js"></script>
 <script src="js/fov.js"></script>
+<script src="js/hips.js"></script>
 <script src="js/field.js"></script>
 </body>
 </html>
