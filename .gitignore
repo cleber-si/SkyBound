@@ -1,0 +1,7 @@
+cones/
+__pycache__/
+*.pyc
+*_finder.png
+*_score.png
+*_field.csv
+.DS_Store
