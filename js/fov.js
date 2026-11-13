@@ -161,6 +161,29 @@ const FoV = (() => {
     return out;
   }
 
+  // the best guide star for a probe guider: stars {x, y, G} [arcsec E, N of the
+  // field centre]; the brightest one, in the G range rng [Gmin, Gmax] if given,
+  // that the probe can hold at least `margin` inside its box (as s4field: 15″).
+  // The probe is turned so that its box's centre lies on the star's position
+  // angle. Returns { ppa, star } or null.
+  function bestProbe(fov, stars, rng, margin) {
+    const A = analyse(fov);
+    if (!A.probe || !A.gd.length) return null;
+    const gd = A.gd.map(withBox), lo = A.patrol.rin, hi = A.patrol.rout;
+    const small = Math.min(...gd.map((r) => Math.min(r.bb[2] - r.bb[0], r.bb[3] - r.bb[1])));
+    const m = margin != null ? margin : Math.min(15, small / 4);
+    const cand = stars.filter((s) => {
+      const r = Math.hypot(s.x, s.y);
+      return r >= lo && r <= hi && isFinite(s.G) && (!rng || (s.G >= rng[0] && s.G <= rng[1]));
+    }).sort((a, b) => a.G - b.G);
+    for (const s of cand) {
+      const ppa = Math.round(paOf(s.x, s.y) * 10) / 10;
+      const [x, y] = rot(s.x, s.y, -(ppa - A.probePA0));       // the star in the file's frame
+      if (gd.some((r) => contains(r, x, y) && edgeDist(r, x, y) >= m)) return { ppa, star: s };
+    }
+    return null;
+  }
+
   /* ---- Aladin FoV files ---------------------------------------------------- */
   const kids = (node, tag) => [...node.children].filter((c) => c.localName === tag);
   const below = (node, tag) => [...node.getElementsByTagNameNS("*", tag)];
@@ -446,7 +469,7 @@ const FoV = (() => {
   }
   function select(id) { try { localStorage.setItem(SEL, id); } catch (e) { /* nothing to remember */ } }
 
-  return { SPARC4, ROLES, BANDS, rot, paOf, analyse, place, contains, edgeDist, parse, load, toJSON, groups,
+  return { SPARC4, ROLES, BANDS, rot, paOf, analyse, place, contains, edgeDist, bestProbe, parse, load, toJSON, groups,
            list, get, add, remove, setRole, settingsOf, setSettings, build, selected, select,
            fromTangent, colName, scienceBox, tiles, tilesFor };
 })();

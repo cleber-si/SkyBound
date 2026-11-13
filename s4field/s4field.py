@@ -36,7 +36,7 @@ By Cleber Silva · UFC/MALTED
 
 from __future__ import annotations
 
-__version__ = "0.13.0"
+__version__ = "0.13.1"
 
 import argparse
 import math
@@ -565,14 +565,15 @@ class FovGeometry:
     """Any instrument's science regions (SkyBound's loaded FoVs), from a list of
     {"shape": "polygon", "pts": [[e, n], ...]} or {"shape": "circle",
     "c": [e, n], "r": r} [arcsec E, N of the field centre, at the position
-    angle observed]. mask(margin) is cached."""
+    angle observed]. mask(margin) is cached. outer: how far from the field
+    centre the instrument reaches beyond its detectors (a guider) ["], so the
+    Gaia cone also holds the guide stars."""
 
     CELLS = 2000           # raster cells across the footprint
     GRID = 100             # pointings across the search, at most
-    SEARCH_MAX = 600.0     # ["] offsets searched, at most (a large field has many comparisons anyway)
     MAX_REGIONS, MAX_POINTS = 5000, 200000
 
-    def __init__(self, regions):
+    def __init__(self, regions, outer=None):
         if not isinstance(regions, (list, tuple)) or not regions:
             raise ValueError("a FoV needs at least one science region")
         if len(regions) > self.MAX_REGIONS:
@@ -599,6 +600,10 @@ class FovGeometry:
         hi = np.max([self._box(r)[2:] for r in out], axis=0)
         self.extent = float(max(self._far(r) for r in out))       # farthest point from the centre
         self.half = float(max(np.abs(lo).max(), np.abs(hi).max()))
+        o = float(outer) if outer is not None else 0.0
+        if not math.isfinite(o) or o < 0:
+            raise ValueError("outer must be a distance >= 0 [arcsec]")
+        self.outer = max(self.extent, o)
         self.res = max(2 * self.extent / self.CELLS, 0.02)
         for r in out:                                            # curved chip edges: fewer vertices
             if r["shape"] == "polygon" and len(r["pts"]) > 8:
@@ -630,15 +635,21 @@ class FovGeometry:
         return self._masks[key]
 
     def reach(self):
-        """How far the field centre is moved from the target in the search ["]."""
-        return min(self.half, self.SEARCH_MAX)
+        """How far the field centre is moved from the target in the search ["]:
+        the footprint's half-size, so the target can sit anywhere on the
+        detector, unless the cone (at most CONE_RADIUS_MAX) cannot hold that."""
+        room = CONE_RADIUS_MAX * 3600.0 - self.outer - 20.0
+        if min(self.half * math.sqrt(2), self.extent) <= room:
+            return self.half
+        return max(0.0, room / math.sqrt(2))
 
     def need(self):
         """The Gaia cone [deg] around the target that holds every star the search
-        can put on the detector: the field centre moves at most reach (and the
-        target stays on the detector, so at most extent) from the target, a star
-        is at most extent from the centre, plus 20" for neighbours (isolation)."""
-        return (min(self.reach() * math.sqrt(2), self.extent) + self.extent + 20.0) / 3600.0
+        can put on the detector or in the guider: the field centre moves at most
+        reach (and the target stays on the detector, so at most extent) from the
+        target, a star is at most outer from the centre, plus 20" for
+        neighbours (isolation)."""
+        return (min(self.reach() * math.sqrt(2), self.extent) + self.outer + 20.0) / 3600.0
 
     def cone_radius(self):
         """The cone to download [deg]: need(), rounded up; never smaller than
@@ -2331,7 +2342,7 @@ def _smaller_cached(text, cache_dir, source, need):
 #   /api/field?target=AU+Mic&...    the recommended pointing, comparison stars,
 #                                   footprints, star list and the text report
 #   POST /api/fov                   another instrument's footprint (JSON
-#                                   {"science": [regions], "name": ...}) -> {"fov": id}
+#                                   {"science": [regions], "name": ..., "outer": ["]}) -> {"fov": id}
 #   /api/field?target=...&fov=id    that instrument's field: basic mode, in
 #                                   band=V|G|g|r|i|z, margin, iso, twin=dE,dN
 #
@@ -2814,16 +2825,18 @@ def make_handler(cache_dir="cones", source="auto"):
                     raise ValueError("send the FoV as JSON, under 20 MB")
                 body = json.loads(self.rfile.read(n).decode("utf-8"))
                 regions = body.get("science") if isinstance(body, dict) else None
-                geom = FovGeometry(regions)
+                outer = body.get("outer") if isinstance(body, dict) else None
+                geom = FovGeometry(regions, outer)
                 import hashlib
-                fid = hashlib.sha1(json.dumps(regions, sort_keys=True).encode()).hexdigest()[:16]
+                fid = hashlib.sha1(json.dumps([regions, outer], sort_keys=True).encode()).hexdigest()[:16]
                 with state:
                     fovs.pop(fid, None)
                     fovs[fid] = (geom, str(body.get("name", ""))[:120])
                     while len(fovs) > 64:
                         fovs.pop(next(iter(fovs)))
                 return self._send(200, {"fov": fid, "regions": len(geom.regions),
-                                        "extent_arcsec": geom.extent,
+                                        "extent_arcsec": geom.extent, "outer_arcsec": geom.outer,
+                                        "reach_arcsec": geom.reach(),
                                         "cone_radius_deg": geom.cone_radius()})
             except (ValueError, KeyError, TypeError) as e:
                 return self._send(400, {"error": f"FoV: {e}"})

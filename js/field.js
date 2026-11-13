@@ -15,7 +15,25 @@
 const Field = (() => {
   const BANDS = ["g", "r", "i", "z"];
   const BAND_COL = { g: "#4ade80", r: "#f87171", i: "#c084fc", z: "#fbbf24" };
-  const DSS_MIN = 20, DSS_MAX = 60;    // sky-image cutouts [arcmin]: follow the view (STScI max 60')
+  // sky images: CDS hips2fits cutouts of a HiPS survey, on the target's own tangent
+  // plane (so they line up with the Gaia stars at any size), following the view;
+  // STScI's DSS2 red (at most 60') if CDS cannot be reached
+  const SKY_MIN = 20, SKY_MAX = 360, SKY_PX = 1000;    // [arcmin], [arcmin], pixels across
+  const SKY_STORE = "skybound.sky.v1";
+  const SURVEYS = [
+    ["CDS/P/DSS2/red", "DSS2 red"],
+    ["CDS/P/DSS2/blue", "DSS2 blue"],
+    ["CDS/P/DSS2/color", "DSS2 colour"],
+    ["CDS/P/Skymapper/DR4/color", "SkyMapper DR4 colour · south"],
+    ["CDS/P/PanSTARRS/DR1/color-z-zg-g", "Pan-STARRS colour · Dec > −30°"],
+    ["CDS/P/DESI-Legacy-Surveys/DR10/color", "Legacy Surveys DR10 colour · patchy"],
+    ["CDS/P/DECaPS/DR2/color", "DECaPS2 colour · southern plane"],
+    ["CDS/P/2MASS/color", "2MASS colour · J H K"],
+    ["CDS/P/allWISE/color", "AllWISE colour · infrared"],
+  ];
+  const H2F = ["https://alasky.cds.unistra.fr/hips-image-services/hips2fits",
+               "https://alaskybis.cds.unistra.fr/hips-image-services/hips2fits"];
+  const surveyName = (id) => (SURVEYS.find((x) => x[0] === id) || [id, id])[1].split(" · ")[0];
   const HELPER = "http://127.0.0.1:8417";
   const MIN_HELPER = "0.13.0";          // ... and any instrument's FoV (POST /api/fov)
   // SPARC4 guider (s4field GUIDER_*), used if the helper does not send them
@@ -486,9 +504,10 @@ const Field = (() => {
   async function fovId() {
     const k = `${st.fov.id}|${st.fovRev}|${st.fpa}`;
     if (st.fids.has(k)) return st.fids.get(k);
-    const sci = placed().science.map((r) => (r.shape === "circle" ? { shape: "circle", c: r.c, r: r.r }
-                                                                  : { shape: "polygon", pts: r.pts }));
-    const js = await post("/api/fov", { name: st.fov.name, science: sci });
+    const P = placed(), sci = P.science.map((r) => (r.shape === "circle" ? { shape: "circle", c: r.c, r: r.r }
+                                                                         : { shape: "polygon", pts: r.pts }));
+    // outer: the guider's reach, so the helper's Gaia cone holds the guide stars too
+    const js = await post("/api/fov", { name: st.fov.name, science: sci, outer: Math.round(P.A.outer * 10) / 10 });
     st.fids.set(k, js.fov);
     return js.fov;
   }
@@ -578,14 +597,27 @@ const Field = (() => {
 
   // placed regions, cached while the FoV, its roles and the angles stay the same
   function placed() {
+    if (st.js && st.js.generic && !st.js.mosaic && !st.ppaTouched) st.ppa = defaultPPA();
     const k = `${st.fov.id}|${st.fovRev}|${st.fpa}|${st.ppa}`;
     if (st.plc && st.plc.k === k) return st.plc.v;
     st.plc = { k, v: FoV.place(st.fov, st.fpa, st.ppa) };
     return st.plc.v;
   }
+  // a guide probe's angle, unless set by hand: on the best guide star the probe
+  // can reach from the current pointing (the brightest in the FoV's G range,
+  // else the brightest), or where the FoV file has it when there is none
   const defaultPPA = () => {
     const A = FoV.analyse(st.fov);
-    return A.probePA0 == null ? null : ((A.probePA0 + st.fpa) % 360 + 360) % 360;
+    if (A.probePA0 == null) return null;
+    const base = ((A.probePA0 + st.fpa) % 360 + 360) % 360, js = st.js, sk = js && js.sky;
+    if (!A.probe || !js || !js.generic || !sk) return base;
+    const k = `${st.fov.id}|${st.fovRev}|${tkey(js)}|${sk.E.length}|${st.fo.e}|${st.fo.n}`;
+    if (st.gp && st.gp.k === k) return st.gp.v == null ? base : st.gp.v;
+    const rng = (st.fov.guide && st.fov.guide.g) || FoV.settingsOf(st.fov).guide, stars = [];
+    for (let i = 0; i < sk.E.length; i++) stars.push({ x: sk.E[i] - st.fo.e, y: sk.N[i] - st.fo.n, G: sk.G[i] });
+    const b = FoV.bestProbe(st.fov, stars, rng);
+    st.gp = { k, v: b ? b.ppa : null };
+    return b ? b.ppa : base;
   };
 
   // the stars of the helper's list inside the science area, brightest first
@@ -904,9 +936,41 @@ const Field = (() => {
     return [((ra % 360) + 360) % 360, dec];
   }
 
-  // DSS cutouts follow the view: a new one, centred on the view, whenever the
+  // Sky cutouts follow the view: a new one, centred on the view, whenever the
   // view leaves the area already loaded. The old image stays until the new
   // one has arrived, so panning never shows a blank sky.
+  function skySurvey() {
+    if (!st.survey) {
+      let v = null;
+      try { v = localStorage.getItem(SKY_STORE); } catch (e) { /* no storage */ }
+      st.survey = SURVEYS.some((x) => x[0] === v) ? v : SURVEYS[0][0];
+    }
+    return st.survey;
+  }
+  function setSurvey(id) {
+    if (!SURVEYS.some((x) => x[0] === id)) return;
+    st.survey = id;
+    try { localStorage.setItem(SKY_STORE, id); } catch (e) { /* kept for this visit */ }
+    st.sky = null; st.imgOK = null;
+    el("fLayImg").innerHTML = "";
+    ensureSky();
+  }
+  // the cutout's URL: W ["] square centred on the view (cx, cy: SVG = −E, −N), on the
+  // target's tangent plane; source 0, 1: the CDS mirrors; 2: STScI (DSS2 red, centred on the view)
+  function skyUrl(src, W, cx, cy, js) {
+    if (src === 2) {
+      const am = Math.min(60, Math.ceil(W / 60)), [ra, dec] = fromTangent(-cx, -cy, js.target.ra, js.target.dec);
+      return { url: "https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red"
+        + `&r=${ra.toFixed(5)}&d=${dec.toFixed(5)}&e=J2000&h=${am}&w=${am}&f=gif`, W: am * 60, name: "DSS2 red (STScI)" };
+    }
+    const P = SKY_PX, sc = W / P, r6 = (x) => Math.round(x * 1e6) / 1e6;
+    const wcs = { NAXIS: 2, NAXIS1: P, NAXIS2: P, CTYPE1: "RA---TAN", CTYPE2: "DEC--TAN", CUNIT1: "deg", CUNIT2: "deg",
+                  CRVAL1: r6(js.target.ra), CRVAL2: r6(js.target.dec),
+                  CRPIX1: r6((P + 1) / 2 - cx / sc), CRPIX2: r6((P + 1) / 2 + cy / sc),
+                  CDELT1: -sc / 3600, CDELT2: sc / 3600 };
+    return { url: `${H2F[src]}?hips=${encodeURIComponent(skySurvey())}&wcs=${encodeURIComponent(JSON.stringify(wcs))}&format=jpg`,
+             W, name: `${surveyName(skySurvey())} (CDS)` };
+  }
   function ensureSky() {
     clearTimeout(st.skyTimer);
     st.skyTimer = setTimeout(() => {
@@ -914,32 +978,39 @@ const Field = (() => {
       if (!js || !v) return;
       const need = v.half * 1.1, cur = st.sky;
       if (cur && Math.abs(v.x - cur.x) + need <= cur.W / 2 && Math.abs(v.y - cur.y) + need <= cur.W / 2) return;
-      if (cur && cur.W >= DSS_MAX * 60 && Math.abs(v.x - cur.x) < 1 && Math.abs(v.y - cur.y) < 1) return;
-      const am = Math.min(DSS_MAX, Math.max(DSS_MIN, Math.ceil((v.half * 2 * 1.6) / 60)));
-      const W = am * 60, [ra, dec] = fromTangent(-v.x, -v.y, js.target.ra, js.target.dec);
-      const url = "https://archive.stsci.edu/cgi-bin/dss_search?v=poss2ukstu_red"
-        + `&r=${ra.toFixed(5)}&d=${dec.toFixed(5)}&e=J2000&h=${am}&w=${am}&f=gif`;
-      st.sky = { x: v.x, y: v.y, W };
-      const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-      for (const [k, val] of [["x", v.x - W / 2], ["y", v.y - W / 2], ["width", W], ["height", W],
-                              ["preserveAspectRatio", "none"], ["opacity", "0"], ["href", url]]) img.setAttribute(k, val);
-      el("fImgNote").textContent = "DSS2 red (STScI) · N up, E left · loading…";
-      img.addEventListener("load", () => {
-        img.setAttribute("opacity", "0.92");
-        for (const old of [...el("fLayImg").children]) if (old !== img && +old.getAttribute("width") <= W) old.remove();
-        el("fImgNote").textContent = "DSS2 red (STScI) · N up, E left";
-        if (st.imgOK !== true) { st.imgOK = true; redraw(); }
-      });
-      img.addEventListener("error", () => {
-        img.remove();
-        if (!el("fLayImg").children.length) {
-          st.imgOK = false;
-          el("fImgNote").textContent = st.js && st.js.sky ? "no sky image (offline?) · Gaia stars drawn instead" : "no sky image (offline?)";
-          redraw();
-        } else el("fImgNote").textContent = "DSS2 red (STScI) · could not load more sky here";
-        // st.sky keeps the failed area, so it is not retried until the view moves past it
-      });
-      el("fLayImg").appendChild(img);
+      if (cur && cur.W >= SKY_MAX * 60 && Math.abs(v.x - cur.x) < 1 && Math.abs(v.y - cur.y) < 1) return;
+      const am = Math.min(SKY_MAX, Math.max(SKY_MIN, Math.ceil((v.half * 2 * 1.6) / 60)));
+      const survey = skySurvey(), req = { x: v.x, y: v.y, W: am * 60, survey };
+      st.sky = req;
+      const tryFrom = (src) => {
+        if (st.sky !== req) return;                  // the view or the survey moved on
+        const u = skyUrl(src, req.W, req.x, req.y, js), W = u.W;
+        const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
+        for (const [k, val] of [["x", req.x - W / 2], ["y", req.y - W / 2], ["width", W], ["height", W],
+                                ["preserveAspectRatio", "none"], ["opacity", "0"], ["href", u.url]]) img.setAttribute(k, val);
+        el("fImgNote").textContent = `${u.name} · N up, E left · loading…`;
+        img.addEventListener("load", () => {
+          if (st.survey !== survey) { img.remove(); return; }
+          img.setAttribute("opacity", "0.92");
+          for (const old of [...el("fLayImg").children]) if (old !== img && +old.getAttribute("width") <= W) old.remove();
+          el("fImgNote").textContent = `${u.name} · N up, E left`;
+          if (src === 2) st.sky = { ...req, W };       // STScI: a smaller cutout
+          if (st.imgOK !== true) { st.imgOK = true; redraw(); }
+        });
+        img.addEventListener("error", () => {
+          img.remove();
+          const next = src === 0 ? 1 : src === 1 && survey === SURVEYS[0][0] ? 2 : null;
+          if (next != null && st.sky === req) { tryFrom(next); return; }
+          if (!el("fLayImg").children.length) {
+            st.imgOK = false;
+            el("fImgNote").textContent = st.js && st.js.sky ? "no sky image (offline?) · Gaia stars drawn instead" : "no sky image (offline?)";
+            redraw();
+          } else el("fImgNote").textContent = `${surveyName(survey)} · could not load more sky here`;
+          // st.sky keeps the failed area, so it is not retried until the view moves past it
+        });
+        el("fLayImg").appendChild(img);
+      };
+      tryFrom(0);
     }, 300);
   }
 
@@ -1016,8 +1087,12 @@ const Field = (() => {
     }
     // where the helper's star list ends, when the FoV reaches beyond it
     const coneR = coneRadius(js), ranked = !!js.ranked;
-    if (js.sky && A.outer + Math.hypot(st.fo.e, st.fo.n) > coneR * 0.95)
-      out.push(`<circle cx="0" cy="0" r="${coneR}" fill="none" stroke="rgba(203,213,225,.55)" stroke-dasharray="10 6" stroke-width="1.2" ${NS} pointer-events="none"><title>edge of the Gaia star list (${(coneR / 60).toFixed(1)}′ around the target)</title></circle>`);
+    if (js.sky) {
+      const short = A.outer + Math.hypot(st.fo.e, st.fo.n) > coneR * 0.95;
+      out.push(`<circle cx="0" cy="0" r="${coneR}" fill="none" stroke="rgba(203,213,225,${short ? 0.55 : 0.3})" stroke-dasharray="10 6" stroke-width="${short ? 1.2 : 1}" ${NS} pointer-events="none"><title>edge of the Gaia star list (${(coneR / 60).toFixed(1)}′ around the target)</title></circle>`);
+      const [lx, ly] = [coneR * Math.SQRT1_2, coneR * Math.SQRT1_2];
+      out.push(`<text x="${(lx + fs * 0.4).toFixed(1)}" y="${(ly + fs * 1.1).toFixed(1)}" font-size="${(fs * 0.85).toFixed(1)}" fill="rgba(203,213,225,.6)" pointer-events="none">Gaia stars to ${(coneR / 60).toFixed(0)}′</text>`);
+    }
     // the recommended field centre, when the field was moved
     if (ranked && st.rec && st.rec.generic && tkey(st.rec) === tkey(js)) {
       const rp = st.rec.pointing, rx = -rp.offset_ra_cosdec_arcsec, ry = -rp.offset_dec_arcsec, c = fs * 0.6;
@@ -1139,6 +1214,7 @@ const Field = (() => {
       + (ranked && js.settings.twin ? "<span>small dashed: second image</span>" : "")
       + (P.guider.length || P.patrol.length ? '<span><i class="dot" style="background:#93c5fd"></i>guider</span>' : "")
       + (P.other.length ? '<span><i class="dot" style="background:none;border:1px solid #cbd5e1"></i>other regions</span>' : "")
+      + (js.sky ? `<span><i class="dot" style="background:none;border:1px dashed #cbd5e1"></i>Gaia star list: ${(coneRadius(js) / 60).toFixed(0)}′ around the target (zoom out to see it)</span>` : "")
       + (st.fpa ? `<span>field PA ${st.fpa}° (dashed tick: its up)</span>` : "");
     el("fHelp").innerHTML = `Drag the sky to pan, scroll or use +/− to zoom, double-click to recentre.
       Drag the <b>gold field</b> to ${ranked ? "try another pointing (it is scored when you let go)" : "move it"}${A.probe ? ", and the <b>blue box</b> around its circle to place the guide probe" : ""}.`
@@ -2114,6 +2190,10 @@ ${res.join("\n")}
     el("fViewGuider").addEventListener("click", () => st.js && preset("guider"));
     el("fZoomIn").addEventListener("click", () => zoom(1 / 1.4));
     el("fZoomOut").addEventListener("click", () => zoom(1.4));
+    const sv = el("fSurvey");
+    sv.innerHTML = SURVEYS.map(([id, name]) => `<option value="${esc(id)}">${esc(name)}</option>`).join("");
+    sv.value = skySurvey();
+    sv.addEventListener("change", () => setSurvey(sv.value));
     el("fReset").addEventListener("click", backToRecommended);
     el("fSummary").addEventListener("change", (ev) => {     // the target list in the summary bar
       if (ev.target.id !== "fTargetSum") return;

@@ -62,7 +62,7 @@ The field card works for any instrument. Choose it under *Instrument*. The choic
     - the **guide-star** G range, used by the guider readout.
   - **Download as SkyBound JSON** saves the FoV with its roles and settings. *Load FoV…* reads that file back, here or in another browser.
   - **Large fields.** The helper downloads a Gaia cone large enough for the FoV, up to 1° in radius. SPARC4's cached 0.27° cones serve fields up to about 12′. While a larger one downloads in the background, the field is scored on the cached one, with a warning. HSC-sized fields are only partly covered (a dashed circle shows where the stars end).
-  - **Without the helper**, the FoV is drawn on the DSS image.
+  - **Without the helper**, the FoV is drawn on the sky image (DSS2 red by default; pick another survey above the map).
 - **Orientation.** SkyBound reads the file's x as East and y as North at position angle 0, the standard tangent-plane convention. This was checked in Aladin with `tools/fov_samples/skybound_orientation_check.xml`: at roll 0 on a north-up image, its square sits to the East and its circle to the North.
 
 ### Mosaics

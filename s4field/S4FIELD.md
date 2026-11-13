@@ -12,7 +12,7 @@ For one target it reports:
 
 Since 0.13 it also ranks comparison stars for **any other instrument** whose field of view SkyBound has loaded (an Aladin FoV file or its New FoV form), in basic mode and one band: section 12b.
 
-Version 0.13.0 · By Cleber Silva · UFC/MALTED
+Version 0.13.1 · By Cleber Silva · UFC/MALTED
 
 ---
 
@@ -573,8 +573,8 @@ SkyBound can load any instrument's field of view (an Aladin "Load instrument FoV
 - **Band.** `band=V` (default; Gaia's synthetic Johnson V, else from G and BP−RP), `G`, or Gaia's synthetic `g`, `r`, `i`, `z`. η is the basic mode's photon-noise η in that band; the colour weights use BP−RP as for SPARC4.
 - **Rules.** As basic mode: RUWE, VARIABLE, non-single star, isolation (`iso`, the radius in arcsec, default 7.5″ = 3 × 2.5″), the edge margin (`margin`, default 12″), colour weights, the V window `dv` and `max_comps`; `filters` as usual. There is no 7′ search radius (the whole field counts) and no readout-trail, saturation or noise check (no exposure model).
 - **Second image.** `twin=dE,dN` (arcsec, on the sky) for a polarimeter: both images must be isolated and on the detector, as in SPARC4's polarimetric mode.
-- **Search.** The field centre moves at most 600″ (or the footprint's half-size, if smaller) from the target, on a grid of about 100 × 100 pointings; `at=dE,dN` scores one pointing. No guider: SkyBound places the instrument's guider itself.
-- **Cone.** The Gaia cone must hold every star the search can put on the detector: min(reach·√2, extent) + extent + 20″ from the target. A cached cone is used if it reaches 95% of that, so SPARC4's 0.27° cones serve fields up to ~12′ (an iKon-L on the 0.6 m Boller & Chivens). A larger one (up to 1°) is downloaded; if a smaller one is cached, the helper answers from it at once, with a warning, and downloads the larger cone in the background, as for the reduced catalogue (section 4). The cone's radius is saved in its `.json`.
+- **Search.** The field centre moves up to the footprint's half-size from the target, so the target can sit anywhere on the detector (a large field reaches comparison stars at its far side), on a grid of about 100 × 100 pointings. Only if that would need a cone larger than 1° is the search narrowed to fit; `at=dE,dN` scores one pointing. No guider: SkyBound places the instrument's guider itself.
+- **Cone.** The Gaia cone must hold every star the search can put on the detector or in the guider: min(reach·√2, extent) + outer + 20″ from the target, where outer is the larger of the detector's extent and the guider's reach (SkyBound sends it as `outer` with the footprint). For ROBO43 (42′ × 28′, off-axis guider 27′ out) that is 0.89°. A cached cone is used if it reaches 95% of that, so SPARC4's 0.27° cones serve fields up to ~12′ (an iKon-L on the 0.6 m Boller & Chivens). A larger one (up to 1°) is downloaded; if a smaller one is cached, the helper answers from it at once, with a warning, and downloads the larger cone in the background, as for the reduced catalogue (section 4). The cone's radius is saved in its `.json`.
 - **Answer.** `generic: true`; `target` (with `V` and `mag` in the band), `catalogue.radius_deg`, `settings` (band, margin, isolation radius, twin), `pointing` (offset, η, `fixed`, `left_out`), `comparisons` (labels), `warnings`, `stars` (every star on the detector(s): identity, offsets from the target and the field centre, G, V, BP−RP, the band's magnitude and its difference from the target's, RUWE, colour weight, reasons), `sky` and `report`.
 
 ## 13. Tests
@@ -608,6 +608,7 @@ The network resolvers are tested with mocked responses, so the suite runs offlin
 
 ## 14. Version history
 
+- **0.13.1** (2026-11-13): a loaded FoV is searched over its whole size (was at most 600″), and the cone also holds the guider (`outer` in `POST /api/fov`).
 - **0.13.0** (2026-11-13)
   - Any instrument's field of view (section 12b): `FovGeometry` (polygons and circles, rasterised per margin), `run(..., geometry=)` in basic mode and one band (`V`, `G`, `g`, `r`, `i`, `z`), `Settings.iso_radius` and `Settings.twin` (a polarimeter's second image), `result_json_fov`, `fov_table` and `report_fov`. The helper: `POST /api/fov`, `/api/field?fov=id&band=&margin=&iso=&twin=`, CORS for POST, and `/api/status` gives the cache's last change (`updated`).
   - The Gaia cone's radius is a parameter (`CONE_RADIUS`, 0.27° as before; up to 1° for a large FoV) and is saved with the cone; a smaller cached cone is served at once while the larger one is downloaded in the background, without a new name lookup.

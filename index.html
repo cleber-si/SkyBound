@@ -314,6 +314,7 @@
   .fld-views{display:flex;gap:4px;margin-bottom:6px;align-items:center;flex-wrap:wrap}
   .fld-views button{white-space:nowrap}
   .fld-views .note{margin-left:auto;font-size:11px;color:var(--grey-2)}
+  .fld-views .fld-survey{font-size:11px;padding:2px 4px;max-width:15em}
   .fld-views button.on{background:var(--navy-800);color:#fff}
   table.comps{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:12px}
   table.comps th{font-size:11px;letter-spacing:.02em;color:var(--grey-2);font-weight:600;text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
@@ -336,7 +337,7 @@
     <div class="sub">Where the mount can go — <em>anytime, anywhere</em>.</div>
   </div>
   <div class="hdr-right">
-    <div class="ver">v0.20.3</div>
+    <div class="ver">v0.20.4</div>
     <div class="sig">By <strong>Cleber Silva</strong> · UFC/MALTED · <a href="https://github.com/cleber-si/skybound" target="_blank" rel="noopener">source</a></div>
   </div>
 </header>
@@ -677,7 +678,8 @@
               <button class="btn-ghost btn-sm" id="fZoomIn" type="button" title="zoom in">+</button>
               <button class="btn-ghost btn-sm" id="fZoomOut" type="button" title="zoom out">−</button>
               <button class="btn-ghost btn-sm" id="fReset" type="button" title="back to the recommended pointing and guide star" hidden>Recommended</button>
-              <span class="note" id="fImgNote">DSS2 red (STScI) · N up, E left</span>
+              <select id="fSurvey" class="fld-survey" aria-label="sky image survey" title="the survey behind the field (CDS hips2fits)"></select>
+              <span class="note" id="fImgNote">DSS2 red (CDS) · N up, E left</span>
             </div>
             <svg id="fSvg" xmlns="http://www.w3.org/2000/svg"><g id="fLayImg"></g><g id="fLay"></g></svg>
             <div class="fld-guide" id="fGuide"></div>
@@ -719,8 +721,8 @@
       <code>python3 s4field/s4field.py --serve</code> from the SkyBound folder. It needs the network only the first time a target is used
       (Gaia DR3 from the ESA archive, or GAVO's reduced copy when ESA is down); cones are then kept in <code>cones/</code>.
       <i>Basic</i> ranks comparison stars by brightness alone (photon noise, within the ΔV window, default 0.35 mag brighter to 8 mag fainter than the target; no readout trails);
-      <i>Advanced</i> adds exposure times, seeing, sky, Moon and the airmass at the chosen time. The sky image is DSS2 red from STScI, decades older than Gaia: fast-moving stars sit
-      away from their markers, which show positions at the observing epoch.
+      <i>Advanced</i> adds exposure times, seeing, sky, Moon and the airmass at the chosen time. The sky image is a survey of your choice (DSS2 red by default) cut out by CDS hips2fits; DSS2 is decades older than Gaia, so
+      fast-moving stars sit away from their markers, which show positions at the observing epoch. Some surveys cover only part of the sky (black elsewhere).
     </div>
   </section>
 

@@ -1383,6 +1383,23 @@ class TestFovGeometry(unittest.TestCase):
         self.assertEqual(z.cone_radius(), 0.31)
         self.assertEqual(F.FovGeometry([_square(2700)]).cone_radius(), F.CONE_RADIUS_MAX)
 
+    def test_large_field_reach_and_guider(self):
+        # ROBO43 (42.1' x 28.1'): the target may sit anywhere on the detector, and
+        # the cone also holds its off-axis guider, 1635" out (0.89 deg, not 0.67)
+        rect = {"shape": "polygon", "pts": [[-1263.5, -842.8], [1263.5, -842.8], [1263.5, 842.8], [-1263.5, 842.8]]}
+        g = F.FovGeometry([rect])
+        self.assertEqual(g.reach(), 1263.5)
+        self.assertEqual(g.cone_radius(), 0.85)
+        gg = F.FovGeometry([rect], outer=1635.0)
+        self.assertEqual(gg.reach(), 1263.5)
+        self.assertEqual(gg.cone_radius(), 0.89)
+        # a field too large for a 1 deg cone searches less, so the cone still holds it
+        big = F.FovGeometry([_square(1500)], outer=1600.0)
+        self.assertLess(big.reach(), 1500)
+        self.assertLessEqual(big.need(), F.CONE_RADIUS_MAX + 1e-9)
+        with self.assertRaises(ValueError):
+            F.FovGeometry([rect], outer=-1)
+
 
 class TestLoadedFovField(unittest.TestCase):
     def setUp(self):
