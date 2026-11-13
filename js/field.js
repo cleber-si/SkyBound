@@ -73,20 +73,25 @@ const Field = (() => {
   const START = "<code>python3 s4field/s4field.py --serve</code>";
   const REPO = "https://github.com/cleber-si/SkyBound";
   function setStatus(kind, word, html) {
-    el("fStatus").innerHTML = `<span class="pill ${kind}">${word}</span><span>${html}</span>`;
+    el("fStatus").innerHTML = `<span class="pill ${kind}">${word}</span><div class="fld-status-body">${html}</div>`;
   }
   // how to get the helper running (the hosted page: the visitor may not have SkyBound's files)
-  const INSTALL = `<details class="hlp-how"><summary>How to install it</summary><ol>
+  const INSTALL = `<details class="hlp-how"><summary>First time? Set up s4field (once, a few minutes)</summary><ol>
+      <li>You need Python 3. Install what s4field uses: <code>pip install numpy astropy matplotlib</code>.</li>
       <li>Download SkyBound (<a href="${REPO}/archive/refs/heads/main.zip" target="_blank" rel="noopener">zip</a>,
-        or <code>git clone ${REPO}.git</code>) and unpack it.</li>
-      <li>Have Python 3 with numpy, astropy and matplotlib: <code>pip install numpy astropy matplotlib</code>.</li>
-      <li>In the SkyBound folder run ${START} and leave it running. It answers only this computer, and keeps
-        the Gaia stars it downloads in <code>cones/</code> (so a target works offline afterwards).</li>
-      <li>Click <b>Connect</b> here. If your browser asks whether this site may reach apps or devices on this computer,
-        allow it.</li></ol></details>`;
+        or <code>git clone ${REPO}.git</code>): s4field comes in it, in the <code>s4field/</code> folder.</li>
+      <li>In the SkyBound folder, run ${START} and leave the terminal open. It answers only this
+        computer, and keeps the Gaia stars it downloads in <code>cones/</code>, so a target also works offline later.</li>
+      <li>Come back here and click <b>Connect to s4field on this computer</b>. If your browser asks whether this site may
+        reach apps or devices on this computer, allow it.</li></ol>
+      <p>Next time: just start s4field (step 3) and connect.</p></details>`;
   const btn = (id, text, primary) => `<button type="button" class="${primary ? "btn-primary" : "btn-ghost"} btn-sm hlp-btn" id="${id}">${text}</button>`;
-  const offHtml = () => `<b>Comparison stars</b> are computed by <b>s4field</b>, a small Python program that runs on your own
-      computer. Everything else in SkyBound works without it. ${btn("fHelperOn", "Connect to s4field", true)}${INSTALL}`;
+  // the hosted page, helper not turned on: what it is, the one thing to click, and how to get it
+  const offHtml = () => `<div class="hlp-head"><b>Comparison stars need s4field running on this computer.</b>
+        This website can't rank them by itself yet: s4field is a small Python program, part of SkyBound, that does it on
+        your machine. Everything else here works without it.</div>
+      <div class="hlp-act">${btn("fHelperOn", "Connect to s4field on this computer", true)}
+        <span class="hlp-alt">Already running it? Connect. Never set it up? Open the steps below.</span></div>${INSTALL}`;
   const lookingHtml = () => `looking for s4field on this computer… If it isn't running, start it now: ${START}`
       + (LOCAL_PAGE ? "" : ". If your browser asks to let this site reach apps or devices on this computer, <b>allow</b> it")
       + `. SkyBound connects by itself. ${LOCAL_PAGE ? "" : btn("fHelperOff", "Cancel")}${LOCAL_PAGE ? "" : INSTALL}`;
@@ -648,7 +653,9 @@ const Field = (() => {
         ${how}${js.sky ? ` <span id="fNStarMeta"></span>` : ""}<br>
         ${js.sky ? `Epoch ${t.epoch.toFixed(2)}. <span style="color:var(--grey-2)">${esc(js.catalogue.note)}</span>` : ""}</div>`;
     const notes = [];
-    if (js.nohelper) notes.push({ w: "Gaia stars and comparison stars come from the s4field helper (not running): the field is drawn on the sky image only." });
+    if (js.nohelper) notes.push({ w: (st.helperPref ?? helperOn())
+      ? "s4field is not answering: the field is drawn on the sky image only, without Gaia stars or comparison stars."
+      : "Drawn on the sky image only: Gaia stars and comparison stars need s4field (see Connect to s4field, above)." });
     const coneR = coneRadius(js);
     if (js.sky && A.outer > coneR * 0.95)
       notes.push({ w: `This FoV reaches ${(A.outer / 60).toFixed(1)}′ from its centre, but the Gaia stars cover only `
