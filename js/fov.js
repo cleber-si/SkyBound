@@ -275,20 +275,23 @@ const FoV = (() => {
   function guessRoles(regions) {
     const centred = regions.filter((r) => r.shape === "circle" && Math.hypot(r.c[0], r.c[1]) <= Math.max(1, 0.005 * r.r));
     const radii = [...new Set(centred.map((r) => r.r))].sort((a, b) => a - b);
+    const holdsCentre = (r) => (r.shape === "circle" ? Math.hypot(r.c[0], r.c[1]) <= r.r : inPoly(r.pts, 0, 0));
+    // a polygon in the annulus: all its corners there, and not around the centre (a
+    // wide detector's corners can all lie in a guider annulus, as ROBO43's do)
+    const inRing = (r, a, b) => r.shape === "polygon" && !holdsCentre(r) && nearest(r) >= a * 0.98 - 1 && farthest(r) <= b * 1.02 + 1;
     let rin = null, rout = null;
     if (radii.length >= 2) {           // a patrol annulus holds at least one polygon
       for (let i = 0; i < radii.length && rin == null; i++)
         for (let j = radii.length - 1; j > i; j--) {
           const a = radii[i], b = radii[j];
           if (b / a < 1.05) continue;
-          const held = regions.filter((r) => r.shape === "polygon" && nearest(r) >= a * 0.98 - 1 && farthest(r) <= b * 1.02 + 1);
+          const held = regions.filter((r) => inRing(r, a, b));
           if (held.length) { rin = a; rout = b; break; }
         }
     }
-    const holdsCentre = (r) => (r.shape === "circle" ? Math.hypot(r.c[0], r.c[1]) <= r.r : inPoly(r.pts, 0, 0));
     for (const r of regions) {
       if (rin != null && centred.includes(r) && (r.r === rin || r.r === rout)) r.role = "patrol";
-      else if (rin != null && r.shape === "polygon" && nearest(r) >= rin * 0.98 - 1 && farthest(r) <= rout * 1.02 + 1) r.role = "guider";
+      else if (rin != null && inRing(r, rin, rout)) r.role = "guider";
       else if (!holdsCentre(r) && /guid|probe|\bwfs\b|acq|tip.?tilt|\bag\b/i.test(r.name)) r.role = "guider";
       else if (!holdsCentre(r) && /patrol|annul/i.test(r.name)) r.role = "other";
       else r.role = "science";
