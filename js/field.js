@@ -130,8 +130,8 @@ const Field = (() => {
   const engineBtn = () => (ENGINE && ENGINE.supported()
     ? `<div class="hlp-act">${btn("fEngineOn", "Compute here, in this browser", true)}
         <span class="hlp-alt">A one-time download of about ${ENGINE.SIZE_MB} MB (Python and numpy, kept by your browser);
-        nothing to install. The same s4field, but <b>slower than the helper</b>: each field takes ${SLOWER} as long,
-        plus a few seconds to start on each visit, and it may only get the reduced Gaia list (GAVO).</span></div>`
+        nothing to install. The same s4field, but <b>slower than the helper</b>, and it may only get the reduced
+        Gaia list (GAVO).</span></div>`
     : "");
   const offHtml = () => `<div class="hlp-head"><b>Comparison stars need s4field</b>, SkyBound's ranking program.
         It can run here in your browser, or on this computer as a helper. Everything else here works without it.</div>
@@ -139,7 +139,7 @@ const Field = (() => {
       <div class="hlp-act">${SAFARI
         ? `<span class="hlp-alt">Safari doesn't let this website reach s4field. Start it, then open ${localLink} (the same SkyBound, connected).</span>`
         : `${btn("fHelperOn", "Connect to s4field on this computer", !(ENGINE && ENGINE.supported()))}
-        <span class="hlp-alt">The faster way, with the full Gaia catalogue from ESA. Already running it? Connect, or open ${localLink}. Never set it up? Open the steps below.</span>`}</div>${INSTALL}`;
+        <span class="hlp-alt">Faster, with the full Gaia catalogue from ESA. Already running it? Connect, or open ${localLink}. Never set it up? Open the steps below.</span>`}</div>${INSTALL}`;
   const lookingHtml = () => `looking for s4field on this computer… If it isn't running, start it now: ${START}`
       + (LOCAL_PAGE ? "" : ". If your browser asks to let this site reach apps or devices on this computer, <b>allow</b> it")
       + `. SkyBound connects by itself. ${LOCAL_PAGE ? "" : btn("fHelperOff", "Cancel")}${LOCAL_PAGE ? "" : INSTALL}`;
@@ -151,9 +151,8 @@ const Field = (() => {
        : "If you blocked this site from reaching apps on this computer, allow it again in the site settings (the icon left of the address)."}
        ${btn("fRetry", "Try again", !(ENGINE && ENGINE.supported()))} ${btn("fHelperOff", "Don't use it")}`
       + engineBtn() + INSTALL);
-  const SLOWER = "about 2–4 times";       // measured: the same fields, native Python vs Pyodide
   const okHtml = (js) => `s4field ${esc(js.s4field)} · ${js.cached.length} cached cone${js.cached.length === 1 ? "" : "s"}`
-      + ` · <span class="hint">the faster way: in this browser, a field takes ${SLOWER} as long</span>`
+      + ` · <b>faster</b> than in the browser`
       + (LOCAL_PAGE ? "" : ` ${btn("fHelperOff", "Disconnect")}`);
 
   // the engine in this browser: loading, ready or failed
@@ -162,7 +161,7 @@ const Field = (() => {
     if (s === "ready") {
       const js = ENGINE.status() || { cached: [] };
       return ["ok", "IN BROWSER", `s4field ${esc(js.s4field)} running in this browser · ${js.cached.length} star list${js.cached.length === 1 ? "" : "s"} kept here · `
-        + `<b>slower</b>: ${SLOWER} as long per field as the helper on this computer `
+        + `<b>slower</b> than the helper `
         + btn("fEngineOff", "Switch off")];
     }
     if (s === "failed")
@@ -404,10 +403,10 @@ const Field = (() => {
       nameMsg("bad", `Name lookup needs the s4field helper: run ${START}, or type RA/Dec below.`);
       return;
     }
-    nameMsg("", `looking up <b>${esc(text)}</b> without the helper…`);
+    nameMsg("", `looking up <b>${esc(text)}</b> in this browser…`);
     try {
       const h = await Lookup.resolve(text);
-      useName(text, h.ra, h.dec, `${lookupLabel(h)} <span class="hint">· without the helper</span>`);
+      useName(text, h.ra, h.dec, `${lookupLabel(h)} <span class="hint">· looked up in this browser</span>`);
     } catch (e) {
       nameMsg("bad", e.message);         // already HTML, names escaped
     }

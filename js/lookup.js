@@ -147,7 +147,7 @@ const Lookup = (() => {
     }
     const hit = await fromTables(name);
     if (hit && !hit.missing) {
-      if (netWhy) hit.note = [hit.note, "the online services did not answer"].filter(Boolean).join(" · ");
+      if (netWhy) hit.note = [hit.note, "Sesame (CDS) did not answer"].filter(Boolean).join(" · ");
       return hit;
     }
     const tables = hit && hit.missing
