@@ -36,7 +36,7 @@ By Cleber Silva · UFC/MALTED
 
 from __future__ import annotations
 
-__version__ = "0.15.0"
+__version__ = "0.16.0"
 
 import argparse
 import copy
@@ -3006,32 +3006,57 @@ def cached_cone(text, cache_dir, source="auto", need=0.0):
     return None
 
 
-def make_handler(cache_dir="cones", source="auto"):
-    import json, threading, urllib.parse
-    from http.server import BaseHTTPRequestHandler
-    lock = threading.Lock()                     # one foreground download at a time
-    state = threading.Lock()
-    upgrading, last_try = set(), {}
-    fovs = {}                                   # id -> (FovGeometry, name), the most recent 64
+class Api:
+    """s4field's helper API without HTTP: get(path, query) and post(path, body)
+    return (status, JSON-able dict). The local helper (serve) puts HTTP around
+    it; SkyBound's in-browser engine calls it directly, the same code.
 
-    def upgrade_later(text, radius=CONE_RADIUS):
+    Background downloads (the full cone after a reduced one, a larger cone for a
+    loaded FoV) run in a thread, or with background="queue" (a browser has no
+    threads) wait in self.queue until run_queue() is called, after the answer."""
+
+    def __init__(self, cache_dir="cones", source="auto", background="thread"):
+        import threading
+        self.cache_dir, self.source, self.background = cache_dir, source, background
+        self.lock = threading.Lock()                # one foreground download at a time
+        self.state = threading.Lock()
+        self.upgrading, self.last_try = set(), {}
+        self.fovs = {}                              # id -> (FovGeometry, name), the most recent 64
+        self.queue = []
+
+    def _later(self, work):
+        if self.background == "thread":
+            import threading
+            threading.Thread(target=work, daemon=True).start()
+        else:
+            self.queue.append(work)
+
+    def run_queue(self):
+        """Run the queued background downloads; returns how many ran."""
+        n = 0
+        while self.queue:
+            self.queue.pop(0)()
+            n += 1
+        return n
+
+    def upgrade_later(self, text, radius=CONE_RADIUS):
         """Only the reduced (GAVO) cone is cached: fetch the full one from ESA in
         the background, at most every UPGRADE_EVERY s per target, so no request
         waits for ESA (it can take minutes, or fail). The next request after it
         arrives uses it."""
         key = text.strip().lower()
-        with state:
-            if key in upgrading or _time.time() - last_try.get(key, 0) < UPGRADE_EVERY:
+        with self.state:
+            if key in self.upgrading or _time.time() - self.last_try.get(key, 0) < UPGRADE_EVERY:
                 return
-            upgrading.add(key)
-            last_try[key] = _time.time()
+            self.upgrading.add(key)
+            self.last_try[key] = _time.time()
 
         def work():
             try:
-                rz = _read_cached(text, cache_dir, True)[1]
+                rz = _read_cached(text, self.cache_dir, True)[1]
                 src = rz.source[7:-1] if rz.source.startswith("cache (") else rz.source
                 rz = Resolution(text, rz.ra, rz.dec, src, rz.note)
-                _download(text, rz, cache_dir, False, radius)
+                _download(text, rz, self.cache_dir, False, radius)
                 print(f"[s4field] full Gaia cone for '{text}' cached in the background: "
                       f"the next request uses it", file=sys.stderr, flush=True)
             except Exception as e:                   # ESA down or slow: keep the reduced cone
@@ -3039,30 +3064,30 @@ def make_handler(cache_dir="cones", source="auto"):
                 print(f"[s4field] full Gaia cone for '{text}' not available ({first}); using the "
                       f"reduced cone, next try in {UPGRADE_EVERY // 60} min", file=sys.stderr, flush=True)
             finally:
-                with state:
-                    upgrading.discard(key)
-        threading.Thread(target=work, daemon=True).start()
+                with self.state:
+                    self.upgrading.discard(key)
+        self._later(work)
 
-    def enlarge_later(text, radius, src):
+    def enlarge_later(self, text, radius, src):
         """A loaded FoV needs a larger cone than the cached one: answer from the
         cached one now and download the larger one in the background (same
         throttle as upgrade_later), so no request waits for the archive."""
         key = "larger|" + text.strip().lower()
-        with state:
-            if key in upgrading or _time.time() - last_try.get(key, 0) < UPGRADE_EVERY:
+        with self.state:
+            if key in self.upgrading or _time.time() - self.last_try.get(key, 0) < UPGRADE_EVERY:
                 return
-            upgrading.add(key)
-            last_try[key] = _time.time()
+            self.upgrading.add(key)
+            self.last_try[key] = _time.time()
 
         def work():
             try:
-                rz = cached_resolution(text, cache_dir)
+                rz = cached_resolution(text, self.cache_dir)
                 rz = Resolution(text, rz.ra, rz.dec,
                                 rz.source[7:-1] if rz.source.startswith("cache (") else rz.source, rz.note)
                 errors = []
                 for lite in ([False] if src == "esa" else [True] if src == "gavo" else [False, True]):
                     try:
-                        _download(text, rz, cache_dir, lite, radius)
+                        _download(text, rz, self.cache_dir, lite, radius)
                         print(f"[s4field] larger Gaia cone ({radius:g} deg) for '{text}' cached in the "
                               f"background: the next request uses it", file=sys.stderr, flush=True)
                         return
@@ -3073,31 +3098,116 @@ def make_handler(cache_dir="cones", source="auto"):
                 print(f"[s4field] larger Gaia cone for '{text}' not available ({str(e)[:200]}); using the "
                       f"cached one, next try in {UPGRADE_EVERY // 60} min", file=sys.stderr, flush=True)
             finally:
-                with state:
-                    upgrading.discard(key)
-        threading.Thread(target=work, daemon=True).start()
+                with self.state:
+                    self.upgrading.discard(key)
+        self._later(work)
 
-    def cone(q, geom=None):
-        src, text = q.get("source", source), q["target"]
+    def cone(self, q, geom=None):
+        src, text = q.get("source", self.source), q["target"]
         refresh, offline = q.get("refresh") == "1", q.get("offline") == "1"
         radius = geom.cone_radius() if geom else CONE_RADIUS
         need = geom.need() * 0.95 if geom else 0.0
         if not refresh:                              # the cache: no network, no waiting for others
-            hit = cached_cone(text, cache_dir, src, need)
+            hit = cached_cone(text, self.cache_dir, src, need)
             if hit:
                 tab, rz, lite = hit
                 if lite and src == "auto" and not offline:
-                    upgrade_later(text, radius)
+                    self.upgrade_later(text, radius)
                 return tab, rz
-            small = _smaller_cached(text, cache_dir, src, need) if need else None
+            small = _smaller_cached(text, self.cache_dir, src, need) if need else None
             if small:                                # too small for this FoV: use it now, enlarge later
                 if not offline:
-                    enlarge_later(text, radius, src)
+                    self.enlarge_later(text, radius, src)
                 return small
-        with lock:
-            return obtain_field(text, cache_dir, refresh=refresh, source=src, offline=offline,
+        with self.lock:
+            return obtain_field(text, self.cache_dir, refresh=refresh, source=src, offline=offline,
                                 radius=radius, need=need)
 
+    def status(self):
+        import glob, os
+        paths = glob.glob(os.path.join(self.cache_dir, "cone_*.csv"))
+        cached = sorted(os.path.basename(p)[5:-4] for p in paths)
+        updated = max((os.path.getmtime(p) for p in paths), default=0.0)
+        return {"s4field": __version__, "cache_dir": os.path.abspath(self.cache_dir), "source": self.source,
+                "cached": cached, "updated": updated}
+
+    def post(self, path, raw):
+        """POST path with the raw body (bytes): /api/fov only."""
+        import json
+        if path != "/api/fov":
+            return 404, {"error": f"unknown endpoint {path}"}
+        try:
+            if not raw or len(raw) > 20_000_000:
+                raise ValueError("send the FoV as JSON, under 20 MB")
+            body = json.loads(raw.decode("utf-8") if isinstance(raw, (bytes, bytearray)) else raw)
+            regions = body.get("science") if isinstance(body, dict) else None
+            outer = body.get("outer") if isinstance(body, dict) else None
+            geom = FovGeometry(regions, outer)
+            import hashlib
+            fid = hashlib.sha1(json.dumps([regions, outer], sort_keys=True).encode()).hexdigest()[:16]
+            with self.state:
+                self.fovs.pop(fid, None)
+                self.fovs[fid] = (geom, str(body.get("name", ""))[:120])
+                while len(self.fovs) > 64:
+                    self.fovs.pop(next(iter(self.fovs)))
+            return 200, {"fov": fid, "regions": len(geom.regions),
+                         "extent_arcsec": geom.extent, "outer_arcsec": geom.outer,
+                         "reach_arcsec": geom.reach(),
+                         "cone_radius_deg": geom.cone_radius()}
+        except (ValueError, KeyError, TypeError) as e:
+            return 400, {"error": f"FoV: {e}"}
+        except Exception as e:
+            return 500, {"error": f"{type(e).__name__}: {e}"}
+
+    def get(self, path, q):
+        """GET path with the query q (a dict of strings)."""
+        try:
+            if path in ("/api/status", "/api", "/"):
+                return 200, self.status()
+            if path not in ("/api/resolve", "/api/cone", "/api/field"):
+                return 404, {"error": f"unknown endpoint {path}"}
+            if not q.get("target"):
+                return 400, {"error": "parameter 'target' is required"}
+            if path == "/api/resolve":
+                rz = (cached_resolution(q["target"], self.cache_dir)
+                      or resolve_target(q["target"], None, offline=q.get("offline") == "1"))
+                return 200, _jsonable({"text": rz.text, "ra": rz.ra, "dec": rz.dec, "hms": _hms(rz.ra, rz.dec),
+                                       "source": rz.source, "note": rz.note})
+            if path == "/api/cone":
+                tab, rz = self.cone(q)
+                return 200, cone_json(tab, rz)
+            geom, name = None, ""
+            if q.get("fov"):                         # another instrument (POST /api/fov first)
+                with self.state:
+                    geom, name = self.fovs.get(q["fov"], (None, ""))
+                if geom is None:
+                    return 404, {"error": "unknown fov: send it again (POST /api/fov)", "code": "unknown_fov"}
+                s = fov_settings_from_query(q)
+            else:
+                s = settings_from_query(q)
+            tab, rz = self.cone(q, geom)
+            epoch = float(q["epoch"]) if q.get("epoch") else None
+            at = None
+            if q.get("at"):
+                at = tuple(float(v) for v in q["at"].split(","))
+                if len(at) != 2:
+                    raise ValueError("at needs two numbers: dE,dN [arcsec]")
+            res = run(tab, rz.ra, rz.dec, s, resolution=rz, epoch=epoch,
+                      match_radius=float(q.get("match_radius", 2.0)), at=at,
+                      allow_blank=q.get("blank", "1") not in ("0", "false", "no"), geometry=geom)
+            return 200, (result_json_fov(res, name) if geom else result_json(res))
+        except (ResolveError, ValueError) as e:
+            return 400, {"error": str(e)}
+        except GaiaArchiveError as e:
+            return 502, {"error": str(e)}
+        except Exception as e:                       # keep serving
+            return 500, {"error": f"{type(e).__name__}: {e}"}
+
+
+def make_handler(cache_dir="cones", source="auto"):
+    import json, urllib.parse
+    from http.server import BaseHTTPRequestHandler
+    api = Api(cache_dir, source)
     import os
     site = site_root()
 
@@ -3157,82 +3267,17 @@ def make_handler(cache_dir="cones", source="auto"):
                 return self._send(404, {"error": f"unknown endpoint {u.path}"})
             try:
                 n = int(self.headers.get("Content-Length") or 0)
-                if n <= 0 or n > 20_000_000:
-                    raise ValueError("send the FoV as JSON, under 20 MB")
-                body = json.loads(self.rfile.read(n).decode("utf-8"))
-                regions = body.get("science") if isinstance(body, dict) else None
-                outer = body.get("outer") if isinstance(body, dict) else None
-                geom = FovGeometry(regions, outer)
-                import hashlib
-                fid = hashlib.sha1(json.dumps([regions, outer], sort_keys=True).encode()).hexdigest()[:16]
-                with state:
-                    fovs.pop(fid, None)
-                    fovs[fid] = (geom, str(body.get("name", ""))[:120])
-                    while len(fovs) > 64:
-                        fovs.pop(next(iter(fovs)))
-                return self._send(200, {"fov": fid, "regions": len(geom.regions),
-                                        "extent_arcsec": geom.extent, "outer_arcsec": geom.outer,
-                                        "reach_arcsec": geom.reach(),
-                                        "cone_radius_deg": geom.cone_radius()})
-            except (ValueError, KeyError, TypeError) as e:
-                return self._send(400, {"error": f"FoV: {e}"})
-            except Exception as e:
-                return self._send(500, {"error": f"{type(e).__name__}: {e}"})
+            except ValueError:
+                n = 0
+            raw = self.rfile.read(n) if 0 < n <= 20_000_000 else b""
+            return self._send(*api.post(u.path, raw))
 
         def do_GET(self):
             u = urllib.parse.urlsplit(self.path)
             q = {k: v[-1] for k, v in urllib.parse.parse_qs(u.query).items()}
-            try:
-                if not u.path.startswith("/api") and self._file(u.path):
-                    return None
-                if u.path in ("/api/status", "/api", "/"):
-                    import glob, os
-                    paths = glob.glob(os.path.join(cache_dir, "cone_*.csv"))
-                    cached = sorted(os.path.basename(p)[5:-4] for p in paths)
-                    updated = max((os.path.getmtime(p) for p in paths), default=0.0)
-                    return self._send(200, {"s4field": __version__, "cache_dir":
-                                            os.path.abspath(cache_dir), "source": source,
-                                            "cached": cached, "updated": updated})
-                if u.path not in ("/api/resolve", "/api/cone", "/api/field"):
-                    return self._send(404, {"error": f"unknown endpoint {u.path}"})
-                if not q.get("target"):
-                    return self._send(400, {"error": "parameter 'target' is required"})
-                if u.path == "/api/resolve":
-                    rz = (cached_resolution(q["target"], cache_dir)
-                          or resolve_target(q["target"], None, offline=q.get("offline") == "1"))
-                    return self._send(200, _jsonable({"text": rz.text, "ra": rz.ra,
-                                                      "dec": rz.dec, "hms": _hms(rz.ra, rz.dec),
-                                                      "source": rz.source, "note": rz.note}))
-                if u.path == "/api/cone":
-                    tab, rz = cone(q)
-                    return self._send(200, cone_json(tab, rz))
-                geom, name = None, ""
-                if q.get("fov"):                         # another instrument (POST /api/fov first)
-                    with state:
-                        geom, name = fovs.get(q["fov"], (None, ""))
-                    if geom is None:
-                        return self._send(404, {"error": "unknown fov: send it again (POST /api/fov)",
-                                                "code": "unknown_fov"})
-                    s = fov_settings_from_query(q)
-                else:
-                    s = settings_from_query(q)
-                tab, rz = cone(q, geom)
-                epoch = float(q["epoch"]) if q.get("epoch") else None
-                at = None
-                if q.get("at"):
-                    at = tuple(float(v) for v in q["at"].split(","))
-                    if len(at) != 2:
-                        raise ValueError("at needs two numbers: dE,dN [arcsec]")
-                res = run(tab, rz.ra, rz.dec, s, resolution=rz, epoch=epoch,
-                          match_radius=float(q.get("match_radius", 2.0)), at=at,
-                          allow_blank=q.get("blank", "1") not in ("0", "false", "no"), geometry=geom)
-                return self._send(200, result_json_fov(res, name) if geom else result_json(res))
-            except (ResolveError, ValueError) as e:
-                return self._send(400, {"error": str(e)})
-            except GaiaArchiveError as e:
-                return self._send(502, {"error": str(e)})
-            except Exception as e:                       # keep serving
-                return self._send(500, {"error": f"{type(e).__name__}: {e}"})
+            if not u.path.startswith("/api") and self._file(u.path):
+                return None
+            return self._send(*api.get(u.path, q))
 
         def log_message(self, fmt, *args):
             print(f"[s4field] {self.address_string()} {fmt % args}", file=sys.stderr)

@@ -815,6 +815,29 @@ class TestSources(unittest.TestCase):
             F.obtain_field("AU Mic", source="simbad")
 
 
+class TestApiWithoutHttp(unittest.TestCase):
+    """The helper's API as plain calls (what SkyBound's in-browser engine runs)."""
+
+    def test_same_answers_as_over_http_and_queued_background(self):
+        import tempfile, json
+        with tempfile.TemporaryDirectory() as d:
+            api = F.Api(d, "auto", background="queue")
+            code, js = api.get("/api/status", {})
+            self.assertEqual((code, js["s4field"], js["cached"]), (200, F.__version__, []))
+            self.assertEqual(api.get("/api/nothing", {"target": "x"})[0], 404)
+            self.assertEqual(api.get("/api/field", {})[0], 400)
+            code, fov = api.post("/api/fov", json.dumps({"name": "t", "science": [_square(352)]}).encode())
+            self.assertEqual(code, 200)
+            self.assertEqual(len(fov["fov"]), 16)
+            self.assertEqual(api.post("/api/fov", b"")[0], 400)
+            self.assertEqual(api.post("/api/other", b"{}")[0], 404)
+            ran = []
+            api._later(lambda: ran.append(1))           # a background download: waits for run_queue
+            self.assertEqual(ran, [])
+            self.assertEqual(api.run_queue(), 1)
+            self.assertEqual(ran, [1])
+
+
 class TestPythonVersions(unittest.TestCase):
     """s4field must run on Python 3.9+, so no syntax newer than that. The one
     that slipped through (v0.13.1, broken on 3.9-3.11): an f-string reusing its

@@ -12,7 +12,7 @@ For one target it reports:
 
 Since 0.13 it also ranks comparison stars for **any other instrument** whose field of view SkyBound has loaded (an Aladin FoV file or its New FoV form), in basic mode and one band: section 12b.
 
-Version 0.15.0 · By Cleber Silva · UFC/MALTED
+Version 0.16.0 · By Cleber Silva · UFC/MALTED
 
 ---
 
@@ -609,6 +609,7 @@ The network resolvers are tested with mocked responses, so the suite runs offlin
 
 ## 14. Version history
 
+- **0.16.0** (2026-11-24): the helper's API is a class, `Api(cache_dir, source, background)`, with `get(path, query)` and `post(path, body)` returning (status, JSON); `--serve` puts HTTP around it, and SkyBound's in-browser engine (Pyodide) calls it directly, so both answer the same. Background downloads run in a thread, or queued (`background="queue"`, `run_queue()`) where there are no threads. Checked under Pyodide 0.29.5 (numpy 2.2.5): the same pointings, comparisons, guide stars and reports as native Python; floats agree to the last bit or two.
 - **0.15.0** (2026-11-24): no astropy: numpy is the only requirement (matplotlib only for the command-line figures). s4field's own star table, CSV reader and writer, coordinate parsing (`hh:mm:ss`, `h m s`, degrees), `hh:mm:ss` formatting, decimal year and Sesame lookup replace astropy's. Checked against astropy to the last bit: 200 000 formatted positions, 60 000 parsed coordinates (one difference, 1e-13 deg, on an RA of 150 hours), every column of real-shaped cones with missing values, and the full results, star-list CSVs, reports and figures of 10 fields. Reading a star list: 0.38 -> 0.08 s.
 - **0.14.0** (2026-11-24): faster and much lighter on memory, same answers. A loaded FoV's search runs in batches of 1024 pointings and looks up only the stars a batch can reach; the comparison choice stops once every pointing has its N stars; faster raster lookups and JSON. ROBO43 (42' x 28', 10 201 pointings x 6115 stars): 4.6 s and 2.6 GB peak -> 0.9 s and 0.2 GB; SPARC4 unchanged (0.1-0.2 s), its JSON twice as fast. Every output checked identical to 0.13.2 (10 cases), and the tests now compare batched with unbatched searches bit for bit.
 - **0.13.2** (2026-11-24): runs on Python 3.9-3.11 again (one f-string needed 3.12); `--serve` also serves the SkyBound page at http://127.0.0.1:8417/, so any browser, Safari included, reaches the helper; certifi's certificates when Python has none (python.org builds for macOS); a clear message on Python < 3.9.
