@@ -99,8 +99,8 @@ const Field = (() => {
   const LOCAL_URL = `${HELPER}/`;
   const localLink = `<a href="${LOCAL_URL}" target="_blank" rel="noopener"><b>${LOCAL_URL}</b></a>`;
   const INSTALL = `<details class="hlp-how"><summary>First time? Set up s4field (once, a few minutes)</summary><ol>
-      <li>You need Python 3.9 or newer. Install what s4field uses: <code>pip install numpy astropy</code>
-        (add <code>matplotlib</code> only for its command-line charts).</li>
+      <li>You need Python 3.9 or newer, and numpy: <code>pip install numpy</code>
+        (add <code>matplotlib</code> only for s4field's command-line charts).</li>
       <li>Download SkyBound (<a href="${REPO}/archive/refs/heads/main.zip" target="_blank" rel="noopener">zip</a>,
         or <code>git clone ${REPO}.git</code>): s4field comes in it, in the <code>s4field/</code> folder.</li>
       <li>In the SkyBound folder, run ${START} and leave the terminal open. It answers only this

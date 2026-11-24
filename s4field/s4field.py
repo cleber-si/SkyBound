@@ -36,9 +36,10 @@ By Cleber Silva · UFC/MALTED
 
 from __future__ import annotations
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"
 
 import argparse
+import copy
 import math
 import os
 import re as _re
@@ -290,7 +291,135 @@ def johnson_v(t):
     return V, src.astype(str)
 
 
-_READ_MEMO = {}                        # (path, mtime, size) -> Table: the helper reads a cone once
+# ============================================================================
+# Star table: the few things s4field needs of astropy's Table, in numpy
+# ============================================================================
+
+class _Row:
+    __slots__ = ("_t", "_i")
+
+    def __init__(self, t, i):
+        self._t, self._i = t, i
+
+    def __getitem__(self, name):
+        return self._t._cols[name][self._i]
+
+
+class Stars:
+    """A table of named numpy columns (masked where a value is missing, as
+    astropy's are), with meta. Columns are read with t["name"] and set with
+    t["name"] = values; t[mask or indices] is a table of those rows; iterating
+    gives rows (row["name"]). Read and written as CSV the way astropy's
+    ascii.csv does, so files and results are byte for byte the same."""
+
+    def __init__(self, cols=None, meta=None):
+        self._cols = {}
+        self.meta = dict(meta or {})
+        for k, v in (cols or {}).items():
+            self[k] = v
+
+    @property
+    def colnames(self):
+        return list(self._cols)
+
+    def __len__(self):
+        return len(next(iter(self._cols.values()))) if self._cols else 0
+
+    def __contains__(self, name):
+        return name in self._cols
+
+    def __getitem__(self, key):
+        if isinstance(key, str):
+            return self._cols[key]
+        if isinstance(key, (list, tuple)) and key and all(isinstance(k, str) for k in key):
+            return Stars({k: self._cols[k] for k in key}, copy.deepcopy(self.meta))   # columns
+        return Stars({k: v[key] for k, v in self._cols.items()}, copy.deepcopy(self.meta))  # rows
+
+    def write(self, path, format="ascii.csv", overwrite=True):
+        """Write as CSV to a path (astropy's call, for the ascii.csv format only)."""
+        if format not in ("ascii.csv", "csv"):
+            raise ValueError(f"only CSV is written, not {format!r}")
+        if not overwrite and os.path.exists(path):
+            raise OSError(f"{path} exists")
+        with open(path, "w", newline="") as f:
+            self.write_csv(f)
+
+    def __setitem__(self, name, value):
+        if not isinstance(value, np.ndarray):
+            value = np.asarray(value)
+        if value.ndim != 1:
+            raise ValueError(f"column {name!r} must be one-dimensional")
+        if self._cols and name not in self._cols and len(value) != len(self):
+            raise ValueError(f"column {name!r} has {len(value)} values, the table {len(self)} rows")
+        self._cols[name] = value
+
+    def __iter__(self):
+        return (_Row(self, i) for i in range(len(self)))
+
+    def copy(self):
+        return Stars({k: v.copy() for k, v in self._cols.items()}, copy.deepcopy(self.meta))
+
+    @classmethod
+    def read_csv(cls, path):
+        """A CSV with a header line. Like astropy: a column whose values are all
+        integers is int64, else float64 if they all parse as numbers, else text;
+        empty fields are masked (data 0, or '0' in text, as astropy has them)."""
+        import csv
+        with open(path, newline="") as f:
+            rows = [r for r in csv.reader(f) if r and any(v.strip() for v in r)]
+        if not rows:
+            raise ValueError(f"{path}: empty CSV")
+        head, body = [h.strip() for h in rows[0]], rows[1:]
+        for k, r in enumerate(body):
+            if len(r) != len(head):
+                raise ValueError(f"{path}: line {k + 2} has {len(r)} fields, the header {len(head)}")
+        t = cls()
+        for j, name in enumerate(head):
+            vals = [r[j].strip() for r in body]
+            miss = np.array([v == "" for v in vals], bool)
+            given = [v for v in vals if v != ""]
+            col = None
+            for kind in (int, float):
+                try:
+                    conv = [kind(v) for v in given]
+                except ValueError:
+                    continue
+                if kind is int and not all(_INT_RE.fullmatch(v) for v in given):
+                    continue                     # "1.0", "1e3" are floats, as numpy reads them
+                full, it = [], iter(conv)
+                for m in miss:
+                    full.append(0 if m else next(it))
+                col = np.array(full, dtype=np.int64 if kind is int else np.float64)
+                break
+            if col is None:
+                col = np.array(["0" if m else v for v, m in zip(vals, miss)], dtype=str)
+            t._cols[name] = np.ma.MaskedArray(col, mask=miss) if miss.any() else col
+        return t
+
+    def write_csv(self, f):
+        """CSV as astropy's ascii.csv writes it: numbers in their shortest exact
+        form, minimal quoting, masked values empty."""
+        import csv
+        w = csv.writer(f, lineterminator="\n")
+        w.writerow(self.colnames)
+        cols = list(self._cols.values())
+
+        def text(v):
+            if v is np.ma.masked:
+                return ""
+            if isinstance(v, (float, np.floating)):
+                return repr(float(v))
+            if isinstance(v, (bool, np.bool_)):
+                return "True" if v else "False"
+            if isinstance(v, (int, np.integer)):
+                return str(int(v))
+            return str(v)
+        for i in range(len(self)):
+            w.writerow([text(c[i]) for c in cols])
+
+
+_INT_RE = _re.compile(r"[+-]?\d+")
+_READ_MEMO = {}                        # (path, mtime, size) -> Stars: the helper reads a cone once
 
 
 def read_gaia(path):
@@ -317,8 +446,7 @@ def read_gaia_file(path):
     from the fixed relations SDSS_POLY, the missing flags read as "not
     flagged", and t.meta["lite"] is True so the report says so.
     """
-    from astropy.table import Table
-    t = Table.read(path, format="ascii.csv")
+    t = Stars.read_csv(path)
     n = len(t)
     lite = not all(c in t.colnames for c in ("g_sdss_mag", "phot_variable_flag", "non_single_star"))
     if "bp_rp" not in t.colnames:
@@ -361,10 +489,15 @@ def read_gaia_file(path):
     return t
 
 
-def current_epoch():
-    """Today as a decimal year."""
-    from astropy.time import Time
-    return float(Time.now().decimalyear)
+def current_epoch(now=None):
+    """Today (or `now`, a UTC datetime) as a decimal year: the year plus the
+    fraction of it gone, as astropy's Time.decimalyear (to well under a second)."""
+    import datetime as _dt
+    now = now or _dt.datetime.now(_dt.timezone.utc)
+    now = now.astimezone(_dt.timezone.utc) if now.tzinfo else now.replace(tzinfo=_dt.timezone.utc)
+    y0 = _dt.datetime(now.year, 1, 1, tzinfo=_dt.timezone.utc)
+    y1 = _dt.datetime(now.year + 1, 1, 1, tzinfo=_dt.timezone.utc)
+    return now.year + (now - y0).total_seconds() / (y1 - y0).total_seconds()
 
 
 def propagate(tab, epoch):
@@ -783,7 +916,7 @@ def rel_error(band, mag, s: Settings):
 class Result:
     settings: Settings
     target: dict
-    stars: object                 # astropy Table, with E, N offsets from target
+    stars: object                 # Stars table (or astropy Table), with E, N offsets from target
     per: dict
     common: np.ndarray
     grid_e: np.ndarray
@@ -1425,10 +1558,34 @@ def _eta_bands(ce, cn, args):
 # Report
 # ============================================================================
 
+# astropy's hour-angle <-> degree factors, to the last bit: (pi/12) / (pi/180)
+_HA2DEG = (math.pi / 12) / (math.pi / 180)          # 14.999999999999998
+_DEG2HA = (math.pi / 180) / (math.pi / 12)
+
+
+def _sexa(value, precision, sign):
+    """'dd:mm:ss.ss' of a value in hours or degrees, rounded as astropy rounds
+    (on the seconds, carrying into minutes and hours)."""
+    neg = value < 0 or (value == 0 and math.copysign(1.0, value) < 0)
+    a = abs(value)
+    d = math.floor(a)
+    m = math.floor((a - d) * 60.0)
+    sec = ((a - d) * 60.0 - m) * 60.0
+    sec = round(sec, precision)
+    if sec >= 60.0:
+        sec -= 60.0
+        m += 1
+    if m >= 60:
+        m -= 60
+        d += 1
+    w = 3 + precision if precision else 2
+    out = f"{d:02d}:{m:02d}:{sec:0{w}.{precision}f}"
+    return ("-" if neg else ("+" if sign else "")) + out
+
+
 def _hms(ra, dec):
-    from astropy.coordinates import SkyCoord
-    import astropy.units as u
-    return SkyCoord(ra * u.deg, dec * u.deg).to_string("hmsdms", sep=":", precision=2)
+    """'hh:mm:ss.ss +dd:mm:ss.ss' (as astropy's SkyCoord.to_string('hmsdms', sep=':', precision=2))."""
+    return f"{_sexa((ra % 360.0) * _DEG2HA, 2, False)} {_sexa(dec, 2, True)}"
 
 
 def _texp_warning(res: Result):
@@ -1716,7 +1873,7 @@ def comp_labels(res: Result):
 
 def field_table(res: Result):
     """Every Gaia star whose image falls on at least one channel at the
-    recommended pointing, brightest first, as an astropy Table.
+    recommended pointing, brightest first, as a Stars table.
 
     Per star: identity, position at the observing epoch, offsets from the
     target and from the field centre, Gaia photometry and quality. Per band
@@ -1726,7 +1883,6 @@ def field_table(res: Result):
     whether it is used as a comparison, and whether it lies on a readout
     trail. Reasons lists every rule the star failed.
     """
-    from astropy.table import Table
     s, b0, tab, t = res.settings, res.best, res.stars, res.target
     ce, cn = b0["dE"], b0["dN"]
     E, N = np.asarray(tab["E"]), np.asarray(tab["N"])
@@ -1737,7 +1893,7 @@ def field_table(res: Result):
     idx = np.where(on_any)[0]
     idx = idx[np.argsort(np.asarray(tab["phot_g_mean_mag"])[idx])]
 
-    out = Table()
+    out = Stars()
     out["source_id"] = np.asarray(tab["source_id"])[idx]
     out["label"] = [comp_labels(res).get(int(i), "target" if i == t["index"] else "")
                     for i in idx]
@@ -1825,7 +1981,7 @@ def write_field_csv(res: Result, path):
     import io
     buf = io.StringIO()
     out.meta = {}
-    out.write(buf, format="ascii.csv")
+    out.write_csv(buf)
     with open(path, "w") as f:
         f.write("\n".join(head) + "\n" + buf.getvalue())
     return len(out)
@@ -1977,17 +2133,68 @@ class Resolution:
 def parse_coordinates(text):
     """'hh:mm:ss.s -dd:mm:ss', 'hh mm ss -dd mm ss' or 'ra dec' (deg).
     Returns (ra, dec) in deg, or None if the text is not coordinates."""
-    from astropy.coordinates import SkyCoord
-    import astropy.units as u
     t = text.replace(",", " ").split()
     if len(t) not in (2, 6) or not all(_re.fullmatch(r"[+\-]?[\d.:]+", w) for w in t):
         return None
-    unit = (u.hourangle, u.deg) if ":" in text or len(t) == 6 else (u.deg, u.deg)
+    sexa = ":" in text or len(t) == 6
+    ra_s, dec_s = (" ".join(t[:3]), " ".join(t[3:])) if len(t) == 6 else (t[0], t[1])
     try:
-        c = SkyCoord(" ".join(t), unit=unit)
+        if sexa:                                 # hours to degrees, then wrapped (as astropy)
+            ra = _wrap(_sexa_value(ra_s, 24.0) * _HA2DEG, 360.0)
+            dec = _sexa_value(dec_s, None)
+        else:
+            ra, dec = _wrap(_number(ra_s), 360.0), _number(dec_s)
     except ValueError:
         return None
-    return float(c.ra.deg), float(c.dec.deg)
+    if not (math.isfinite(ra) and math.isfinite(dec)) or abs(dec) > 90.0:
+        return None
+    return float(ra), float(dec)
+
+
+def _wrap(a, full):
+    """Into [0, full), only if outside it (astropy's Longitude wrapping, to the bit)."""
+    if 0.0 <= a < full:
+        return a
+    a -= ((a - 0.0) // full) * full
+    if a >= full:
+        a -= full
+    if a < 0.0:
+        a += full
+    return a
+
+
+def _number(w):
+    if not _re.fullmatch(r"[+\-]?(\d+\.?\d*|\.\d+)", w):
+        raise ValueError(w)
+    return float(w)
+
+
+def _sexa_value(w, hour_limit):
+    """'h:m:s', 'h m s', 'h:m' or 'h' -> a float, as astropy parses it (the sign
+    of the first field applies to all; minutes and seconds in [0, 60])."""
+    parts = _re.split(r"[:\s]+", w.strip())
+    if not 1 <= len(parts) <= 3 or any(p == "" for p in parts):
+        raise ValueError(w)
+    neg = parts[0].startswith("-")
+    if parts[0][:1] in "+-":
+        parts[0] = parts[0][1:]
+    nums = [_number(p) for p in parts]
+    if any(p.startswith(("+", "-")) for p in parts[1:]):
+        raise ValueError(w)
+    for k, v in enumerate(nums[1:]):
+        if not 0.0 <= v <= 60.0:                  # 60 itself: allowed (astropy carries it)
+            raise ValueError(w)
+        if k == 0 and len(nums) == 3 and v != int(v):
+            raise ValueError(w)              # fractional minutes before seconds
+    if len(nums) == 1:
+        v = nums[0]
+    elif len(nums) == 2:
+        v = nums[0] + nums[1] / 60.0
+    else:
+        v = nums[0] + nums[1] / 60.0 + nums[2] / 3600.0
+    if hour_limit is not None and len(nums) > 1 and not v <= hour_limit:
+        raise ValueError(w)                      # astropy checks the hours of h:m(:s) only
+    return -v if neg else v
 
 
 def resolve_gaia_id(text, tab):
@@ -2006,18 +2213,25 @@ def resolve_gaia_id(text, tab):
 
 def resolve_sesame(name, mirrors=SESAME_MIRRORS, timeout=NETWORK_TIMEOUT):
     """Name -> (ra, dec, server) via Sesame, trying mirrors in order."""
-    from astropy.coordinates import SkyCoord, name_resolve
-    from astropy.utils.data import conf as data_conf
+    import urllib.parse, urllib.request
     errors = []
     for url in mirrors:
-        try:
-            with name_resolve.sesame_url.set([url]), \
-                    data_conf.set_temp("remote_timeout", timeout):
-                c = SkyCoord.from_name(name, parse=False, cache=False)
-            return float(c.ra.deg), float(c.dec.deg), url
+        try:                                       # SIMBAD, then NED, then VizieR, as astropy asks
+            q = url.rstrip("/") + "/SNV?" + urllib.parse.quote(name)
+            req = urllib.request.Request(q, headers={"User-Agent": f"s4field/{__version__}"})
+            with _urlopen(req, timeout) as r:
+                text = r.read().decode("utf-8", "replace")
+            m = _re.search(r"%J\s*([0-9\.]+)\s*([\+\-\.0-9]+)", text)
+            if not m:
+                raise NameResolveError(f"no coordinates for {name!r}")
+            return float(m.group(1)), float(m.group(2)), url
         except Exception as e:                     # NameResolveError, timeouts, DNS
             errors.append(f"{url}: {type(e).__name__}")
     raise ResolveError("Sesame: " + "; ".join(errors))
+
+
+class NameResolveError(Exception):
+    """Sesame answered, but without coordinates for the name."""
 
 
 def _tap_csv(query, timeout=NETWORK_TIMEOUT):
@@ -2483,11 +2697,10 @@ def _rows(table, id_cols=("source_id",)):
 
 def cone_json(tab, rz):
     """The Gaia cone as JSON (for SkyBound to draw or score by itself)."""
-    from astropy.table import Table
     keep = ["source_id", "ra", "dec", "pmra", "pmdec", "phot_g_mean_mag", "bp_rp", "ruwe",
             "phot_variable_flag", "non_single_star", "g_sdss_mag", "r_sdss_mag",
             "i_sdss_mag", "z_sdss_mag", "mag_est", "V", "V_source"]
-    t = Table({c: tab[c] for c in keep if c in tab.colnames})
+    t = Stars({c: tab[c] for c in keep if c in tab.colnames})
     lite = bool(tab.meta.get("lite"))
     return {"s4field": __version__, "epoch_positions": GAIA_EPOCH,
             "target": {"text": rz.text, "ra": rz.ra, "dec": rz.dec, "source": rz.source,
@@ -3192,13 +3405,18 @@ def main(argv=None):
         return 2
     print(report(res))
     if a.out:
-        finder_chart(res).savefig(f"{a.out}_finder.png", dpi=130)
-        figs = [f"{a.out}_finder.png"]
-        if not res.target.get("blank"):          # no eta to map at an empty position
-            score_map(res).savefig(f"{a.out}_score.png", dpi=130)
-            figs.append(f"{a.out}_score.png")
         n = write_field_csv(res, f"{a.out}_field.csv")
-        print(f"\nfigures: {', '.join(figs)}")
+        try:
+            import matplotlib                      # only for the two figures
+        except ImportError:
+            print("\nfigures: none (pip install matplotlib to draw them)")
+        else:
+            finder_chart(res).savefig(f"{a.out}_finder.png", dpi=130)
+            figs = [f"{a.out}_finder.png"]
+            if not res.target.get("blank"):      # no eta to map at an empty position
+                score_map(res).savefig(f"{a.out}_score.png", dpi=130)
+                figs.append(f"{a.out}_score.png")
+            print(f"\nfigures: {', '.join(figs)}")
         print(f"star list: {a.out}_field.csv ({n} stars on the detector)")
     return 0
 

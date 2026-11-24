@@ -18,10 +18,21 @@ import s4field as F
 CSV = os.environ.get("S4FIELD_TEST_CSV")
 
 
-class FakeCoord:
-    def __init__(self, ra, dec):
-        from astropy.coordinates import Angle
-        self.ra, self.dec = Angle(ra, "deg"), Angle(dec, "deg")
+class FakeSesame:
+    """Stands in for urllib: records the URLs asked, answers like Sesame."""
+
+    def __init__(self, ra, dec, fail=()):
+        self.ra, self.dec, self.fail, self.urls = ra, dec, fail, []
+
+    def __call__(self, req, timeout=None):
+        url = req.full_url
+        self.urls.append(url)
+        if any(f in url for f in self.fail):
+            import urllib.error
+            raise urllib.error.URLError("timeout")
+        body = (f"# TOI-2631\t#Q123\n#=S=Simbad (CDS, via client/server):    1    0ms (from cache)\n"
+                f"%@ 1234\n%J {self.ra:.8f} {self.dec:+.8f} = 22:00:24.7 -48:42:37\n%J.E [0.01 0.01 0] A\n").encode()
+        return io.BytesIO(body)
 
 
 class TestCoordinates(unittest.TestCase):
@@ -44,10 +55,101 @@ class TestCoordinates(unittest.TestCase):
             self.assertIsNone(F.parse_coordinates(name), name)
 
 
+try:
+    import astropy                              # only as a reference: s4field does not need it
+    HAVE_ASTROPY = True
+except ImportError:
+    HAVE_ASTROPY = False
+
+
+@unittest.skipUnless(HAVE_ASTROPY, "astropy is the reference these are checked against")
+class TestAgainstAstropy(unittest.TestCase):
+    """s4field 0.15 replaced astropy with its own code: the same answers, to the bit."""
+
+    def test_hms_formatting(self):
+        import random
+        from astropy.coordinates import SkyCoord
+        import astropy.units as u
+        rng = random.Random(1)
+        pts = [(rng.uniform(0, 360), math.degrees(math.asin(rng.uniform(-1, 1)))) for _ in range(3000)]
+        pts += [((h + 59 / 60 + s / 3600) * 15, sg * (d + 59 / 60 + s / 3600))
+                for h, d in ((0, 0), (23, 89), (11, 45)) for s in (59.995, 59.9949999, 0.005, 0.0049999)
+                for sg in (1, -1)]
+        for ra, dec in pts:
+            ref = SkyCoord(ra * u.deg, dec * u.deg).to_string("hmsdms", sep=":", precision=2)
+            self.assertEqual(F._hms(ra, dec), ref, (ra, dec))
+
+    def test_coordinate_parsing(self):
+        import random, re, warnings
+        from astropy.coordinates import SkyCoord
+        import astropy.units as u
+        rng = random.Random(2)
+
+        def ref(text):
+            t = text.replace(",", " ").split()
+            if len(t) not in (2, 6) or not all(re.fullmatch(r"[+\-]?[\d.:]+", w) for w in t):
+                return None
+            unit = (u.hourangle, u.deg) if ":" in text or len(t) == 6 else (u.deg, u.deg)
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    c = SkyCoord(" ".join(t), unit=unit)
+            except Exception:
+                return None
+            return float(c.ra.deg), float(c.dec.deg)
+        cases = ["10:00:00 -30:00:00", "-0:30:00 -00:30:00", "24:00:00 0:0:0", "25:00:00 0:0:0",
+                 "10:60:00 0:0:0", "10:00:60 0:0:0", "10:30.5:00 0:0:0", "10:30.5 -20:30.5", "150 -91",
+                 "360 0", "400 10", "-10 -10", "10:00:00 -90:00:01", ".5 -.5", "5. -5.", "10 -0",
+                 "10 00 00.5 +30 00 00.25", "1:2:3:4 5", "10:-5:00 0", "-00:00:01 -00:00:01", "3:40:28.6,69:52:18.57"]
+        for _ in range(3000):
+            h, m, sec = rng.randrange(24), rng.randrange(60), round(rng.uniform(0, 60), rng.choice([0, 1, 2, 3]))
+            d, dm, ds = rng.randrange(90), rng.randrange(60), round(rng.uniform(0, 60), rng.choice([0, 1, 2]))
+            sg = rng.choice(["-", "+", ""])
+            cases += [f"{h:02d}:{m:02d}:{sec} {sg}{d:02d}:{dm:02d}:{ds}", f"{h} {m} {sec} {sg}{d} {dm} {ds}",
+                      f"{h}:{m} {sg}{d}:{dm}", f"{rng.uniform(0, 360):.{rng.randrange(8)}f}, {sg}{rng.uniform(0, 90):.5f}"]
+        for c in cases:
+            self.assertEqual(F.parse_coordinates(c), ref(c), c)
+
+    def test_csv_read_and_write(self):
+        import tempfile
+        from astropy.table import Table
+        text = ("source_id,ra,dec,pmra,flag,nss,g,mixed\n"
+                "4000000000000005652,150.1,-30.2,1.5,NOT_AVAILABLE,0,12.3,1\n"
+                "4000000000000005653,150.2,-30.1,,VARIABLE,,,2.5\n"
+                "4000000000000005654,150.3,-30.0,-2,\"a, b\",1,nan,+3\n")
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "x.csv")
+            with open(path, "w") as f:
+                f.write(text)
+            a, b = Table.read(path, format="ascii.csv"), F.Stars.read_csv(path)
+            self.assertEqual(a.colnames, b.colnames)
+            for c in a.colnames:
+                x, y = a[c], b[c]
+                self.assertEqual(np.asarray(x).dtype, np.asarray(y).dtype, c)
+                self.assertTrue(np.array_equal(np.ma.getmaskarray(x), np.ma.getmaskarray(y)), c)
+                self.assertTrue(np.array_equal(np.asarray(x), np.asarray(y),
+                                               equal_nan=np.asarray(x).dtype.kind == "f"), c)
+            out = {"s": ["", "a,b", 'say "hi"'], "f": np.array([1.0, np.nan, 0.1 + 0.2]),
+                   "r": np.round(np.array([12.3456, -0.0, 1e-7]), 9), "b": [True, False, True],
+                   "i": np.array([4000000000000005652, -2, 3])}
+            buf1, buf2 = io.StringIO(), io.StringIO()
+            Table(out).write(buf1, format="ascii.csv")
+            F.Stars(out).write_csv(buf2)
+            self.assertEqual(buf1.getvalue(), buf2.getvalue())
+
+    def test_decimal_year(self):
+        import datetime as dt
+        from astropy.time import Time
+        for when in (dt.datetime(2026, 11, 24, 17, 30, tzinfo=dt.timezone.utc),
+                     dt.datetime(2028, 2, 29, 23, 59, 59, tzinfo=dt.timezone.utc),
+                     dt.datetime(2026, 1, 1, tzinfo=dt.timezone.utc)):
+            ref = Time(when).decimalyear
+            self.assertAlmostEqual(F.current_epoch(when), ref, delta=1e-9)   # 0.03 s
+
+
 class TestGaiaId(unittest.TestCase):
     def setUp(self):
-        from astropy.table import Table
-        self.tab = Table({"source_id": [111111111111111111, 6560684113691404160],
+        self.tab = F.Stars({"source_id": [111111111111111111, 6560684113691404160],
                           "ra": [1.0, 330.1], "dec": [2.0, -48.7]})
 
     def test_forms(self):
@@ -77,40 +179,30 @@ class TestGaiaId(unittest.TestCase):
 
 class TestSesame(unittest.TestCase):
     def test_cfa_mirror_is_tried_first(self):
-        from astropy.coordinates import name_resolve
-        seen = []
-
-        def fake(name, parse=False, cache=False):
-            seen.append(name_resolve.sesame_url.get()[0])
-            return FakeCoord(330.1, -48.7)
-        with mock.patch("astropy.coordinates.SkyCoord.from_name", side_effect=fake):
+        fake = FakeSesame(330.1, -48.7)
+        with mock.patch.object(F, "_urlopen", side_effect=fake):
             ra, dec, url = F.resolve_sesame("TOI-2631")
-        self.assertEqual(seen, [F.SESAME_MIRRORS[0]])
+        self.assertEqual(len(fake.urls), 1)
+        self.assertEqual(fake.urls[0], F.SESAME_MIRRORS[0] + "SNV?TOI-2631")   # SIMBAD, NED, VizieR
         self.assertIn("harvard", url)
+        self.assertEqual((ra, dec), (330.1, -48.7))
 
     def test_falls_back_to_strasbourg(self):
-        from astropy.coordinates import name_resolve
-        seen = []
-
-        def fake(name, parse=False, cache=False):
-            url = name_resolve.sesame_url.get()[0]
-            seen.append(url)
-            if "harvard" in url:
-                raise name_resolve.NameResolveError("timeout")
-            return FakeCoord(1.0, 2.0)
-        with mock.patch("astropy.coordinates.SkyCoord.from_name", side_effect=fake):
+        fake = FakeSesame(1.0, 2.0, fail=("harvard",))
+        with mock.patch.object(F, "_urlopen", side_effect=fake):
             r = F.resolve_target("HD 1234")
-        self.assertEqual(len(seen), 2)
+        self.assertEqual(len(fake.urls), 2)
+        self.assertEqual(fake.urls[1], F.SESAME_MIRRORS[1] + "SNV?HD%201234")
         self.assertEqual(r.source, "Sesame (Strasbourg)")
         self.assertEqual((r.ra, r.dec), (1.0, 2.0))
 
-    def test_mirror_setting_is_restored(self):
-        from astropy.coordinates import name_resolve
-        before = name_resolve.sesame_url.get()
-        with mock.patch("astropy.coordinates.SkyCoord.from_name",
-                        return_value=FakeCoord(0, 0)):
-            F.resolve_sesame("X")
-        self.assertEqual(name_resolve.sesame_url.get(), before)
+    def test_unknown_name(self):
+        def empty(req, timeout=None):
+            return io.BytesIO(b"# xyz\n#! *** Nothing found ***\n")
+        with mock.patch.object(F, "_urlopen", side_effect=empty):
+            with self.assertRaises(F.ResolveError) as cm:
+                F.resolve_sesame("no such star")
+        self.assertIn("NameResolveError", str(cm.exception))
 
 
 class TestExoplanetArchive(unittest.TestCase):
@@ -153,12 +245,11 @@ class TestProperMotion(unittest.TestCase):
     """A fast-moving star (AU Mic-like) among slow ones."""
 
     def setUp(self):
-        from astropy.table import Table
         rng = np.random.default_rng(1)
         n = 40
         ra = 311.29 + rng.uniform(-0.08, 0.08, n)
         dec = -31.34 + rng.uniform(-0.08, 0.08, n)
-        self.tab = Table({"source_id": np.arange(n) + 10**17, "ra": ra, "dec": dec,
+        self.tab = F.Stars({"source_id": np.arange(n) + 10**17, "ra": ra, "dec": dec,
                           "pmra": np.zeros(n), "pmdec": np.zeros(n),
                           "phot_g_mean_mag": np.linspace(8, 17, n)})
         self.tab["pmra"][0], self.tab["pmdec"][0] = 280.0, -360.6
@@ -404,8 +495,8 @@ class TestRules05(unittest.TestCase):
         self.assertLess(vn, 0)          # ... and South (PA 208 deg)
 
     def _tab(self, rows):
-        from astropy.table import Table
-        t = Table(rows=rows, names=("E", "N", "m", "bp_rp"))
+        cols = list(zip(*rows)) if rows else [[], [], [], []]
+        t = F.Stars({k: np.asarray(v, float) for k, v in zip(("E", "N", "m", "bp_rp"), cols)})
         for b in F.BANDS:
             t[f"{b}_sdss_mag"] = t["m"]
         return t
@@ -473,7 +564,6 @@ class TestFieldTable(unittest.TestCase):
 
     def test_polar_columns_and_csv(self):
         import tempfile
-        from astropy.io import ascii
         res = self._res("polar")
         t = F.field_table(res)
         self.assertIn("x2_z", t.colnames)
@@ -485,15 +575,16 @@ class TestFieldTable(unittest.TestCase):
             with open(path) as f:
                 head = f.readline()
             self.assertTrue(head.startswith("# s4field"))
-            back = ascii.read(path, format="csv", comment="#")
+            with open(path) as f, open(path + ".plain", "w") as g:
+                g.write("".join(l for l in f if not l.startswith("#")))
+            back = F.Stars.read_csv(path + ".plain")
             self.assertEqual(len(back), n)
             self.assertEqual(int(back["source_id"][0]), int(t["source_id"][0]))
 
 
 class TestJohnsonV(unittest.TestCase):
     def test_relation_and_preference(self):
-        from astropy.table import Table, MaskedColumn
-        t = Table({"phot_g_mean_mag": [7.843, 12.0, 12.0, 12.0],
+        t = F.Stars({"phot_g_mean_mag": [7.843, 12.0, 12.0, 12.0],
                    "bp_rp": [2.111, 0.8, 6.0, np.nan]})
         V, src = F.johnson_v(t)
         self.assertAlmostEqual(V[0], 8.667, places=3)          # AU Mic (catalogue V ~ 8.6)
@@ -501,7 +592,7 @@ class TestJohnsonV(unittest.TestCase):
         self.assertAlmostEqual(V[1], 12.0 - (-0.02704 + 0.01424 * x - 0.2156 * x**2 + 0.01426 * x**3), places=6)
         self.assertTrue(np.isnan(V[2]) and np.isnan(V[3]))      # outside -0.5..5.0 / no colour
         self.assertEqual(list(src), ["G_bprp", "G_bprp", "", ""])
-        t["v_jkc_mag"] = MaskedColumn([8.60, 12.3, 0.0, 0.0], mask=[False, True, True, True])
+        t["v_jkc_mag"] = np.ma.MaskedArray([8.60, 12.3, 0.0, 0.0], mask=[False, True, True, True])
         V, src = F.johnson_v(t)
         self.assertEqual((V[0], src[0]), (8.60, "gaia_synthetic"))   # Gaia's own V wins
         self.assertEqual(src[1], "G_bprp")                           # fallback where missing
@@ -542,11 +633,11 @@ class TestAUMic(unittest.TestCase):
 def _lite_csv(full_path, out_path):
     """What GAVO's gaia.dr3lite gives for the same cone: no synthetic
     photometry, no variability or non-single-star flags."""
-    from astropy.table import Table
-    t = Table.read(full_path, format="ascii.csv")
+    t = F.Stars.read_csv(full_path)
     keep = [c for c in ("source_id", "ra", "dec", "pmra", "pmdec", "phot_g_mean_mag", "bp_rp", "ruwe")
             if c in t.colnames]
-    t[keep].write(out_path, format="ascii.csv", overwrite=True)
+    with open(out_path, "w", newline="") as f:
+        F.Stars({c: t[c] for c in keep}).write_csv(f)
     return out_path
 
 
@@ -1122,7 +1213,6 @@ if __name__ == "__main__":
 def _cone(ra0, dec0, hole=60.0, seed=3, n_stars=400):
     """A synthetic Gaia cone (every column read_gaia gives) with no star within
     `hole` arcsec of (ra0, dec0), and one guide-range star in the guider annulus."""
-    from astropy.table import Table
     rng = np.random.default_rng(seed)
     e = rng.uniform(-900, 900, n_stars)
     n = rng.uniform(-900, 900, n_stars)
@@ -1133,7 +1223,7 @@ def _cone(ra0, dec0, hole=60.0, seed=3, n_stars=400):
     k = len(e)
     G = np.r_[rng.uniform(11, 17.9, k - 1), 10.5]
     col = rng.uniform(0.5, 1.5, k)
-    t = Table({"source_id": np.arange(k) + 4 * 10**18, "ra": ra, "dec": dec,
+    t = F.Stars({"source_id": np.arange(k) + 4 * 10**18, "ra": ra, "dec": dec,
                "pmra": np.zeros(k), "pmdec": np.zeros(k), "phot_g_mean_mag": G, "bp_rp": col,
                "ruwe": np.full(k, 1.0), "phot_variable_flag": ["NOT_AVAILABLE"] * k,
                "non_single_star": np.zeros(k), "mag_est": np.zeros(k, bool)})

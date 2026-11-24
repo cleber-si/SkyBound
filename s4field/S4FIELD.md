@@ -12,7 +12,7 @@ For one target it reports:
 
 Since 0.13 it also ranks comparison stars for **any other instrument** whose field of view SkyBound has loaded (an Aladin FoV file or its New FoV form), in basic mode and one band: section 12b.
 
-Version 0.14.0 · By Cleber Silva · UFC/MALTED
+Version 0.15.0 · By Cleber Silva · UFC/MALTED
 
 ---
 
@@ -40,13 +40,14 @@ Version 0.14.0 · By Cleber Silva · UFC/MALTED
 ## 1. Requirements
 
 - Python 3.9 or later (tested on 3.9, 3.10, 3.11 and 3.13)
-- `numpy`, `astropy`, `matplotlib`
+- `numpy`
+- `matplotlib`, only for the two command-line figures (`--out`); without it the star list and report are still written
 
 ```bash
-pip install numpy astropy matplotlib
+pip install numpy            # add matplotlib for the figures
 ```
 
-The script is a single file with no other dependencies.
+The script is a single file with no other dependencies. Since 0.15 it does not use astropy: its star table, CSV reading and writing, coordinate parsing and formatting, decimal year and Sesame lookup are its own, checked against astropy to the last bit (the tests do so whenever astropy is installed).
 
 ## 2. Quick start
 
@@ -232,7 +233,7 @@ GAVO is the only Gaia service tested that a web page can query directly (section
 
 ### The star list
 
-`--out PREFIX` also writes `PREFIX_field.csv`. It opens with `#` comment lines giving the field centre, the TCSPD offset, the epoch, the mode and the exposure times (marked if estimated). Most readers skip these lines; with astropy, use `ascii.read(path, format="csv", comment="#")`.
+`--out PREFIX` also writes `PREFIX_field.csv`. It opens with `#` comment lines giving the field centre, the TCSPD offset, the epoch, the mode and the exposure times (marked if estimated). Most readers skip these lines; with astropy, use `ascii.read(path, format="csv", comment="#")`; with pandas, `read_csv(path, comment="#")`.
 
 Each row is one star:
 
@@ -515,7 +516,7 @@ res = F.run(tab, rz.ra, rz.dec, s, resolution=rz,
             compare=[("planned", 330.069, -48.699)])
 
 print(F.report(res))
-stars = F.field_table(res)        # astropy Table of the stars on the detector
+stars = F.field_table(res)        # Stars table of the stars on the detector (t["G"], t.colnames)
 F.write_field_csv(res, "toi2631_field.csv")
 fig  = F.finder_chart(res)        # matplotlib Figure, not shown or saved
 fig2 = F.score_map(res)
@@ -608,6 +609,7 @@ The network resolvers are tested with mocked responses, so the suite runs offlin
 
 ## 14. Version history
 
+- **0.15.0** (2026-11-24): no astropy: numpy is the only requirement (matplotlib only for the command-line figures). s4field's own star table, CSV reader and writer, coordinate parsing (`hh:mm:ss`, `h m s`, degrees), `hh:mm:ss` formatting, decimal year and Sesame lookup replace astropy's. Checked against astropy to the last bit: 200 000 formatted positions, 60 000 parsed coordinates (one difference, 1e-13 deg, on an RA of 150 hours), every column of real-shaped cones with missing values, and the full results, star-list CSVs, reports and figures of 10 fields. Reading a star list: 0.38 -> 0.08 s.
 - **0.14.0** (2026-11-24): faster and much lighter on memory, same answers. A loaded FoV's search runs in batches of 1024 pointings and looks up only the stars a batch can reach; the comparison choice stops once every pointing has its N stars; faster raster lookups and JSON. ROBO43 (42' x 28', 10 201 pointings x 6115 stars): 4.6 s and 2.6 GB peak -> 0.9 s and 0.2 GB; SPARC4 unchanged (0.1-0.2 s), its JSON twice as fast. Every output checked identical to 0.13.2 (10 cases), and the tests now compare batched with unbatched searches bit for bit.
 - **0.13.2** (2026-11-24): runs on Python 3.9-3.11 again (one f-string needed 3.12); `--serve` also serves the SkyBound page at http://127.0.0.1:8417/, so any browser, Safari included, reaches the helper; certifi's certificates when Python has none (python.org builds for macOS); a clear message on Python < 3.9.
 - **0.13.1** (2026-11-13): a loaded FoV is searched over its whole size (was at most 600″), and the cone also holds the guider (`outer` in `POST /api/fov`).
