@@ -130,7 +130,8 @@ const Field = (() => {
   const engineBtn = () => (ENGINE && ENGINE.supported()
     ? `<div class="hlp-act">${btn("fEngineOn", "Compute here, in this browser", true)}
         <span class="hlp-alt">A one-time download of about ${ENGINE.SIZE_MB} MB (Python and numpy, kept by your browser);
-        nothing to install. The same s4field, a little slower.</span></div>`
+        nothing to install. The same s4field, but <b>slower than the helper</b>: each field takes ${SLOWER} as long,
+        plus a few seconds to start on each visit, and it may only get the reduced Gaia list (GAVO).</span></div>`
     : "");
   const offHtml = () => `<div class="hlp-head"><b>Comparison stars need s4field</b>, SkyBound's ranking program.
         It can run here in your browser, or on this computer as a helper. Everything else here works without it.</div>
@@ -138,7 +139,7 @@ const Field = (() => {
       <div class="hlp-act">${SAFARI
         ? `<span class="hlp-alt">Safari doesn't let this website reach s4field. Start it, then open ${localLink} (the same SkyBound, connected).</span>`
         : `${btn("fHelperOn", "Connect to s4field on this computer", !(ENGINE && ENGINE.supported()))}
-        <span class="hlp-alt">Already running it? Connect, or open ${localLink}. Never set it up? Open the steps below.</span>`}</div>${INSTALL}`;
+        <span class="hlp-alt">The faster way, with the full Gaia catalogue from ESA. Already running it? Connect, or open ${localLink}. Never set it up? Open the steps below.</span>`}</div>${INSTALL}`;
   const lookingHtml = () => `looking for s4field on this computer… If it isn't running, start it now: ${START}`
       + (LOCAL_PAGE ? "" : ". If your browser asks to let this site reach apps or devices on this computer, <b>allow</b> it")
       + `. SkyBound connects by itself. ${LOCAL_PAGE ? "" : btn("fHelperOff", "Cancel")}${LOCAL_PAGE ? "" : INSTALL}`;
@@ -150,7 +151,9 @@ const Field = (() => {
        : "If you blocked this site from reaching apps on this computer, allow it again in the site settings (the icon left of the address)."}
        ${btn("fRetry", "Try again", !(ENGINE && ENGINE.supported()))} ${btn("fHelperOff", "Don't use it")}`
       + engineBtn() + INSTALL);
+  const SLOWER = "about 2–4 times";       // measured: the same fields, native Python vs Pyodide
   const okHtml = (js) => `s4field ${esc(js.s4field)} · ${js.cached.length} cached cone${js.cached.length === 1 ? "" : "s"}`
+      + ` · <span class="hint">the faster way: in this browser, a field takes ${SLOWER} as long</span>`
       + (LOCAL_PAGE ? "" : ` ${btn("fHelperOff", "Disconnect")}`);
 
   // the engine in this browser: loading, ready or failed
@@ -158,7 +161,8 @@ const Field = (() => {
     const s = ENGINE.state();
     if (s === "ready") {
       const js = ENGINE.status() || { cached: [] };
-      return ["ok", "IN BROWSER", `s4field ${esc(js.s4field)} running in this browser · ${js.cached.length} star list${js.cached.length === 1 ? "" : "s"} kept here `
+      return ["ok", "IN BROWSER", `s4field ${esc(js.s4field)} running in this browser · ${js.cached.length} star list${js.cached.length === 1 ? "" : "s"} kept here · `
+        + `<b>slower</b>: ${SLOWER} as long per field as the helper on this computer `
         + btn("fEngineOff", "Switch off")];
     }
     if (s === "failed")
@@ -317,7 +321,7 @@ const Field = (() => {
   };
   function fieldTarget() {
     const t = listed();
-    return t && t.named ? t.name : coordText();
+    return t && t.named && !t.byCoords ? t.name : coordText();
   }
   // what s4field is asked for: the name (the helper resolves it), or, in the browser,
   // the coordinates the page already has (web pages may not ask the Exoplanet Archive)
@@ -377,6 +381,20 @@ const Field = (() => {
     nameMsg("", `<b>${esc(text)}</b> → ${esc(el("ra").value)} ${esc(el("dec").value)} · ${label}`);
     save();
     render();
+  }
+  // a name's J2000 position (degrees), for the target-list loader: the helper when it is
+  // in use, else the page's own lookups (online, then the reference tables); null if unknown
+  async function resolve(text) {
+    if (!useEngine() && (st.helperPref ?? helperOn())) {
+      try { const js = await api("/api/resolve?target=" + encodeURIComponent(text), 90000); return { ra: js.ra, dec: js.dec }; }
+      catch (e) { /* not running, or it doesn't know the name: the page's own lookups */ }
+    }
+    if (typeof Lookup === "undefined") return null;
+    try { const h = await Lookup.resolve(text); return { ra: h.ra, dec: h.dec }; }
+    catch (e) {
+      const hit = await Lookup.fromTables(text).catch(() => null);
+      return hit && !hit.missing ? { ra: hit.ra, dec: hit.dec } : null;
+    }
   }
   const lookupLabel = (h) => `${esc(h.source)}${h.note ? " · " + esc(h.note) : ""}`;
 
@@ -728,8 +746,7 @@ const Field = (() => {
     const f2 = (x) => (x == null || !isFinite(x) ? "—" : x.toFixed(2));
     const inList = typeof TARGETS !== "undefined" && TARGETS.some((x) => x.name === js._label);
     const tSel = inList ? `<select class="cd-tsel" id="fTargetSum" aria-label="target of this field" title="another target: its field">${tgtOptions()}</select>` : "";
-    const colon = (deg, hours) => sexa(deg, hours).replace(/ /g, ":");
-    const targetC = `${colon(t.ra, true)} ${colon(t.dec, false)}`;
+    const targetC = `${sexa(t.ra, true)} ${sexa(t.dec, false)}`;
     const copyBtn = (txt, id) => `<button type="button" class="copy-btn" ${id ? `id="${id}"` : ""} data-copy="${esc(txt)}" title="copy">copy</button>`;
     const tname = js._label || (blank && !t.nostar ? "position" : "target");
     const rec = ranked && st.rec && st.rec.generic && tkey(st.rec) === tkey(js) ? st.rec.pointing : null;
@@ -869,8 +886,7 @@ const Field = (() => {
     const manualNote = p.fixed
       ? `<small class="manual">your pointing${rec ? ` · recommended ${sgn(rec.offset_ra_cosdec_arcsec)}″, ${sgn(rec.offset_dec_arcsec)}″ (η ${f2(rec.eta)})` : ""}</small>`
       : `<small>${blank ? "field centred on the position" : "move the field centre from the target"}</small>`;
-    const colon = (deg, hours) => sexa(deg, hours).replace(/ /g, ":");
-    const fieldC = `${colon(p.ra, true)} ${colon(p.dec, false)}`, targetC = `${colon(t.ra, true)} ${colon(t.dec, false)}`;
+    const fieldC = `${sexa(p.ra, true)} ${sexa(p.dec, false)}`, targetC = `${sexa(t.ra, true)} ${sexa(t.dec, false)}`;
     const tname = js._label || (blank ? "position" : "target");
     // a target of the list: its label is a list of all of them, to switch without scrolling up
     const inList = typeof TARGETS !== "undefined" && TARGETS.some((x) => x.name === js._label);
@@ -921,6 +937,7 @@ const Field = (() => {
     el("fReport").textContent = js.report;
     el("fRepWrap").hidden = false;
     el("fReset").hidden = !(p.fixed || st.guiderTouched);
+    centreBtn();
     table(js);
     viewerNewResult(js);
   }
@@ -973,6 +990,7 @@ const Field = (() => {
     st.foFor = null;                     // a loaded FoV starts again from the target
     const p = js.pointing, newTarget = st.imgFor !== tkey(js);
     st.fo = { e: p.offset_ra_cosdec_arcsec, n: p.offset_dec_arcsec };
+    centreBtn();
     if (newTarget || !st.guiderTouched) {
       st.guiderTouched = false;
       st.pa = js.guider[0] ? js.guider[0].pa : (st.pa == null ? 0 : st.pa);
@@ -1229,7 +1247,7 @@ const Field = (() => {
   const fmtOff = () => `RA·cosδ ${sgn(st.fo.e)}″  DEC ${sgn(st.fo.n)}″`;
   function centreText() {
     const t = st.js.target, [ra, dec] = fromTangent(st.fo.e, st.fo.n, t.ra, t.dec);
-    return `${sexa(ra, true).replace(/ /g, ":")} ${sexa(dec, false).replace(/ /g, ":")}`;
+    return `${sexa(ra, true)} ${sexa(dec, false)}`;
   }
 
   // a loaded FoV, or SPARC4 without the helper: every region, at the field PA, on the sky
@@ -1366,6 +1384,7 @@ const Field = (() => {
       el("fReset").textContent = "Centre";
       el("fReset").title = "field back on the target, guider back to its default";
     }
+    centreBtn();
     el("fLegend").innerHTML = `<span><i class="dot" style="background:#E2A123"></i>${esc(s4 ? "field (all channels)" : "detector(s)")} · ${what}</span>`
       + (ranked && !js.target.blank ? '<span><i class="dot" style="background:#fff;border:1px solid #94a3bb"></i>comparison</span><span><i class="dot" style="background:none;border:1px dashed #94a3b8"></i>not used (×)</span>'
          : js.sky ? '<span><i class="dot" style="background:none;border:1px solid #fff"></i>brightest in the field (numbered)</span>' : "")
@@ -1564,6 +1583,7 @@ const Field = (() => {
       st.at = { ...st.fo };
       waitingNote();
       el("fReset").hidden = false;
+      centreBtn();
       compute(false);
     } else if (d.mode === "guider") el("fReset").hidden = false;
   }
@@ -1582,6 +1602,27 @@ const Field = (() => {
     if (!st.v) return;
     ev.preventDefault();
     zoom(Math.exp(Math.sign(ev.deltaY) * 0.15), svgPt(ev));
+  }
+
+  // "Centre": the field centre on the target (offset 0, 0), scored as a pointing of your own.
+  // Shown when s4field ranked the field and its centre is off the target (without s4field,
+  // the reset button already says "Centre").
+  const canCentre = () => !!(st.js && st.mode !== "mosaic" && !st.js.mosaic && !(st.js.generic && !st.js.ranked)
+    && st.js.target && !st.js.target.blank);
+  function centreBtn() {
+    const b = el("fCentre");
+    if (!b) return;
+    const fo = st.fo || { e: 0, n: 0 };     // not set yet before the first field is drawn
+    b.hidden = !(canCentre() && (Math.abs(fo.e) >= 0.05 || Math.abs(fo.n) >= 0.05));
+  }
+  function centreOnTarget() {
+    if (!canCentre()) return;
+    st.at = { e: 0, n: 0 };
+    st.fo = { e: 0, n: 0 };
+    el("fCentre").hidden = true;
+    waitingNote();
+    redraw();
+    compute(false);
   }
 
   function backToRecommended() {
@@ -2298,8 +2339,13 @@ ${res.join("\n")}
     whenNote();
     const lab = targetLabel();
     el("fHead").textContent = st.fov.name + (lab ? " · " + lab : "");
-    if (st.mode === "mosaic") { compute(true); return; }   // a mosaic only needs the target
-    if (!st.computed) return;
+    const shown = el("fieldBody").style.display !== "none";
+    if (st.mode === "mosaic") { if (shown) compute(true); return; }   // a mosaic only needs the target
+    if (!st.computed) {                  // nothing shown yet: the field of this target, once per target and FoV
+      const k = `${fieldTarget()}|${st.fov.id}`;
+      if (shown && st.autoFor !== k) { st.autoFor = k; compute(true); }
+      return;
+    }
     const targetChanged = fieldTarget() !== st.lastTarget;
     if (targetChanged) { st.at = null; st.guiderTouched = false; }
     if (!isS4() || st.tab === "basic" || el("fAuto").checked || targetChanged) compute(true);
@@ -2340,6 +2386,7 @@ ${res.join("\n")}
     el("fTime").addEventListener("change", () => { el("fWhen").value = "planned"; render(); });
     el("fMoon").addEventListener("change", whenNote);
     el("fViewField").addEventListener("click", () => st.js && preset("field"));
+    el("fCentre").addEventListener("click", centreOnTarget);
     el("fViewGuider").addEventListener("click", () => st.js && preset("guider"));
     el("fZoomIn").addEventListener("click", () => zoom(1 / 1.4));
     el("fZoomOut").addEventListener("click", () => zoom(1.4));
@@ -2381,6 +2428,7 @@ ${res.join("\n")}
       const b = el("fieldBody"), hidden = b.style.display === "none";
       b.style.display = hidden ? "" : "none";
       el("toggleField").textContent = hidden ? "Hide" : "Show";
+      if (hidden) render();                // shown again: catch up with the target
     });
     for (const id of ["fDvMin", "fDvMax"]) {
       el(id).addEventListener("input", dvShow);
@@ -2461,6 +2509,7 @@ ${res.join("\n")}
     const setMode = (m) => {
       if (st.mode === m) return;
       st.mode = m; st.key = null; st.v = null; st.foFor = null;
+      el("fCentre").hidden = true;
       if (m === "field") st.fo = { e: 0, n: 0 };
       save(); applyFovUI(); render();
       if (fieldTarget()) compute(false); else el("fOut").hidden = true;
@@ -2518,5 +2567,5 @@ ${res.join("\n")}
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else setTimeout(init, 0);
 
-  return { onRender, markerMs, compute, ping, find };
+  return { onRender, markerMs, compute, ping, find, resolve };
 })();

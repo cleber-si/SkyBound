@@ -22,7 +22,7 @@ const Lookup = (() => {
   const GAVO = "https://dc.g-vo.org/tap/sync";
   const ONLINE_MS = 8000;               // per service: past this, try the next layer
   const SELF = (document.currentScript && document.currentScript.src) || "";
-  const INDEX_URL = SELF ? SELF.replace(/lookup\.js(\?.*)?$/, "targets.js") : "js/targets.js";
+  const INDEX_URL = SELF ? SELF.replace(/lookup\.js(\?.*)?$/, "targets.js$1") : "js/targets.js";
 
   class Offline extends Error {}        // no answer at all: network down, blocked or timed out
 

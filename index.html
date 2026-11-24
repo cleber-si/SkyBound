@@ -337,7 +337,7 @@
     <div class="sub">Where the mount can go — <em>anytime, anywhere</em>.</div>
   </div>
   <div class="hdr-right">
-    <div class="ver">v0.22.1</div>
+    <div class="ver">v1.0.0</div>
     <div class="sig">By <strong>Cleber Silva</strong> · UFC/MALTED · <a href="https://github.com/cleber-si/skybound" target="_blank" rel="noopener">source</a></div>
   </div>
 </header>
@@ -368,13 +368,14 @@
         </div>
         <div class="prec-box" id="precBox" style="margin-top:8px"></div>
         <div class="tgt-list" id="tgtList" hidden></div>
+        <input type="file" id="tgtFile" accept=".csv,.txt,.tsv,text/csv,text/plain" hidden>
       </div>
       <div class="top-col">
         <h2>Observatory &amp; night</h2>
         <label>Telescope
           <select id="scope"></select>
         </label>
-        <div class="lim-line">pointing limits: <span class="file-tag" id="limName">placeholder (built-in)</span>
+        <div class="lim-line">pointing limits: <span class="file-tag" id="limName">none loaded</span>
           <a href="#" id="openSite">change</a></div>
         <label style="margin-top:10px">Date &amp; time at the site
           <span class="date-row">
@@ -432,14 +433,16 @@
         <div class="file-row">
           <button class="btn-ghost" id="csvBtn" type="button">Load limits CSV…</button>
           <input type="file" id="csvFile" accept=".csv,text/csv" hidden>
-          <span>active:</span><span class="file-tag" id="csvName">placeholder (built-in)</span>
-          <button class="btn-ghost" id="csvReset" type="button">Reset to placeholder</button>
+          <span>active:</span><span class="file-tag" id="csvName">none loaded</span>
+          <button class="btn-ghost" id="csvReset" type="button" hidden>Remove</button>
           <button class="btn-ghost" id="csvTemplate" type="button">Download template</button>
         </div>
       </div>
       <div class="warn" style="margin-top:12px">
-        The built-in limits are a <b>placeholder</b>, not a real telescope limit table — every observatory handles pointing
-        differently. Download the template, enter <b>your</b> altitude/zenith limits per azimuth sector, and load it here.
+        SkyBound has <b>no built-in pointing limits</b>: until you load your telescope's table, the limit bar stays grey
+        (“no limit data”) and nothing is called pointable. Every observatory handles pointing differently: download the
+        template (its rows are an example, not a real telescope), enter <b>your</b> zenith-angle limits per azimuth sector,
+        and load it here. This browser remembers the table you load.
         Columns: <code>azimute_from, azimute_to, zenit_angle_max, zenit_angle_security, zenit_angle_free</code> (degrees,
         zenith angle zero at the zenith); set the azimuth convention above to match your CSV. Sectors left at ZA ≥ 85°
         are treated as <b>unmeasured</b> — the tool will report “no limit data” there rather than a false limit.
@@ -677,6 +680,7 @@
               <button class="btn-ghost btn-sm" id="fViewGuider" type="button">With guider</button>
               <button class="btn-ghost btn-sm" id="fZoomIn" type="button" title="zoom in">+</button>
               <button class="btn-ghost btn-sm" id="fZoomOut" type="button" title="zoom out">−</button>
+              <button class="btn-ghost btn-sm" id="fCentre" type="button" title="point the field centre at the target (offset 0, 0) and score that pointing" hidden>Centre</button>
               <button class="btn-ghost btn-sm" id="fReset" type="button" title="back to the recommended pointing and guide star" hidden>Recommended</button>
               <select id="fSurvey" class="fld-survey" aria-label="sky image survey" title="the survey behind the field (HiPS tiles from CDS)"></select>
               <span class="note" id="fImgNote">DSS2 red (CDS) · N up, E left</span>
@@ -728,6 +732,8 @@
 
 </main>
 
+<!-- each file is asked for with ?v=<version>, so a new version never mixes with files
+     the browser kept from an older one: change it with the header's version -->
 <script>
 "use strict";
 const D2R=Math.PI/180, R2D=180/Math.PI;
@@ -746,18 +752,6 @@ function azConv(azNE){  // convert internal North-through-East azimuth to the ch
   return ((a%360)+360)%360;
 }
 function pressFromAlt(m){ if(!isFinite(m)) m=0; return 1013.25*Math.pow(Math.max(0.01,1-0.0065*m/288.15),5.255); }
-
-const PLACEHOLDER_CSV =
-`# SkyBound placeholder limits -- NOT a real telescope. Load your observatory's own CSV.
-azimute_from,azimute_to,zenit_angle_max,zenit_angle_security,zenit_angle_free
-0,45,58,52,45
-45,90,75,70,65
-90,135,75,70,65
-135,180,78,73,68
-180,225,78,73,68
-225,270,75,70,65
-270,315,75,70,65
-315,360,58,52,45`;
 
 const SITES=[
  ["Brazil","OPD / LNA — Pico dos Dias (Perkin-Elmer 1.6 m)",-22.53444,-45.5825,1864,-180],
@@ -902,6 +896,7 @@ function lookup(azDeg){ const az=norm360(azDeg);
   for(const s of SECTORS){ if(s.from<=s.to){ if(az>=s.from&&az<s.to) return s; } else { if(az>=s.from||az<s.to) return s; } }
   for(const s of SECTORS){ if(s.to===360&&az>=s.from) return s; } return null; }
 function classify(za,alt,sector){
+  if(!SECTORS.length) return {level:"none",label:"NO LIMIT DATA",reason:"no pointing limits loaded"};
   if(!sector)  return {level:"none",label:"NO LIMIT DATA",reason:"azimuth not in the limits table"};
   if(alt<0)    return {level:"notvisible",label:"NOT VISIBLE",reason:"below horizon"};
   if(sector.zmax>=NODATA_ZA) return {level:"none",label:"NO LIMIT DATA",reason:"no measured limit at this azimuth"};
@@ -971,16 +966,99 @@ function tgtDel(i){
   render(); }
 function tgtClear(){ TARGETS=[]; ACTIVE=-1; nAnon=0; nCol=0;
   $("ra").value=""; $("dec").value=""; $("tName").value=""; $("tMsg").innerHTML=""; render(); }
+
+/* ---- the list kept in this browser, saved to and loaded from a file ------- */
+// A file is CSV (or tab/semicolon separated): name,ra,dec, one target per row, J2000.
+// RA in hours (18 11 58.1, 18:11:58, 18.199) or degrees when > 24 or the column says
+// so; a row with a name only is looked up like the name box; a header row is optional.
+const TGT_STORE="skybound.targets.v1";
+let tgtStored=null, tgtRestored=false;
+function tgtStore(){
+  if(!tgtRestored) return;              // not before the kept list is back
+  const v=JSON.stringify({active:ACTIVE,list:TARGETS.map(t=>({name:t.named?t.name:null,ra:t.raTxt,dec:t.decTxt,byCoords:!!t.byCoords}))});
+  if(v===tgtStored) return; tgtStored=v;
+  try{ localStorage.setItem(TGT_STORE,v); }catch(e){ /* this visit only */ } }
+function tgtRestore(){
+  let v=null; try{ v=JSON.parse(localStorage.getItem(TGT_STORE)||"null"); }catch(e){ v=null; }
+  tgtRestored=true;
+  if(!v||!Array.isArray(v.list)) return;
+  let act=-1;
+  v.list.forEach((t,k)=>{ const ra=parseAngle(t.ra), dec=parseAngle(t.dec); if(!isFinite(ra)||!isFinite(dec)) return;
+    const i=tgtAdd(ra,dec,t.name||null,String(t.ra),String(t.dec)); if(t.byCoords) TARGETS[i].byCoords=true; if(k===v.active) act=i; });
+  if(act>=0){ ACTIVE=act; const t=TARGETS[act]; $("ra").value=t.raTxt; $("dec").value=t.decTxt; $("tName").value=t.named?t.name:""; } }
+function sexTxt(v,hours){ const neg=v<0; v=Math.abs(v); const dp=hours?3:2;
+  let tot=Math.round(v*3600*10**dp)/10**dp; const a=Math.floor(tot/3600); tot-=a*3600; const b=Math.floor(tot/60), c=tot-b*60;
+  return (neg?"-":hours?"":"+")+pad(a)+" "+pad(b)+" "+(c<10?"0":"")+c.toFixed(dp); }
+const csvCell=x=>/[",\n]/.test(x)?'"'+x.replace(/"/g,'""')+'"':x;
+function tgtSaveFile(){
+  const rows=TARGETS.map(t=>[t.named?t.name:"",t.raTxt,t.decTxt].map(csvCell).join(","));
+  downloadCSV("# SkyBound target list: name, RA and Dec (J2000; RA in hours). A row may give a name only: it is looked up when loaded.\nname,ra,dec\n"
+    +rows.join("\n")+"\n","skybound_targets.csv"); }
+function splitRow(line,sep){ const out=[]; let cur="", q=false;
+  for(let i=0;i<line.length;i++){ const c=line[i];
+    if(q){ if(c==='"'){ if(line[i+1]==='"'){ cur+='"'; i++; } else q=false; } else cur+=c; }
+    else if(c==='"') q=true; else if(c===sep){ out.push(cur.trim()); cur=""; } else cur+=c; }
+  out.push(cur.trim()); return out; }
+function parseTargetFile(text){
+  const lines=text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l&&l[0]!=="#");
+  if(!lines.length) return [];
+  const sep=[",","\t",";"].find(c=>lines[0].includes(c))||",";
+  let rows=lines.map(l=>splitRow(l,sep)), col={name:-1,ra:-1,dec:-1}, deg=false;
+  const h=rows[0].map(x=>x.toLowerCase());
+  const at=re=>h.findIndex(x=>re.test(x));
+  if(h.some(x=>/^(name|target|object|star|id|ra|dec|ra_?deg|dec_?deg|ra_?j2000|dec_?j2000|raj2000|dej2000|de)$/.test(x))){
+    col={name:at(/^(name|target|object|star|id)$/),ra:at(/^(ra|ra_?deg|ra_?j2000|raj2000)$/),dec:at(/^(dec|de|dec_?deg|dec_?j2000|dej2000)$/)};
+    deg=/deg/.test(h[col.ra]||""); rows=rows.slice(1); }
+  return rows.map(r=>{
+    let name, ra, dec;
+    if(col.name>=0||col.ra>=0){ name=col.name>=0?r[col.name]:""; ra=col.ra>=0?r[col.ra]:""; dec=col.dec>=0?r[col.dec]:""; }
+    else if(r.length>=3){ [name,ra,dec]=r; }
+    else if(r.length===2&&isFinite(parseAngle(r[0]))&&isFinite(parseAngle(r[1]))){ name=""; [ra,dec]=r; }
+    else { name=r.join(" "); ra=dec=""; }
+    const given=!!(String(ra||"").trim()||String(dec||"").trim());
+    let a=parseAngle(ra), d=parseAngle(dec);
+    if(isFinite(a)&&(deg||(a>24&&!/[\s:hm]/.test(String(ra).trim())))){ a/=15; ra=sexTxt(a*15,true); }   // degrees
+    const ok=isFinite(a)&&isFinite(d)&&a>=0&&a<24&&Math.abs(d)<=90;
+    return {name:(name||"").trim(),ra:ok?String(ra).trim():"",dec:ok?String(dec).trim():"",raH:ok?a:NaN,dec_:ok?d:NaN,bad:given&&!ok}; })
+    .filter(t=>t.name||isFinite(t.raH)||t.bad); }
+async function tgtLoadFile(file){
+  const msg=(cls,html)=>{ $("tMsg").className="name-msg"+(cls?" "+cls:""); $("tMsg").innerHTML=html; };
+  let list;
+  try{ list=parseTargetFile(await file.text()); }catch(e){ msg("bad",escH(file.name)+": "+escH(e.message)); return; }
+  if(!list.length){ msg("bad","No targets found in <b>"+escH(file.name)+"</b>: one row per target, <code>name,ra,dec</code> (RA in hours, J2000), or a name per row."); return; }
+  const before=TARGETS.length; let first=-1; const failed=[], bad=[];
+  for(let k=0;k<list.length;k++){ const t=list[k];
+    if(t.bad){ bad.push(t.name||"row "+(k+1)); continue; }
+    let ra=t.raH, dec=t.dec_, raTxt=t.ra, decTxt=t.dec;
+    if(!isFinite(ra)){                                  // a name only: look it up
+      msg("","loading <b>"+escH(file.name)+"</b>: looking up <b>"+escH(t.name)+"</b> ("+(k+1)+" of "+list.length+")…");
+      const r=typeof Field!=="undefined"&&Field.resolve?await Field.resolve(t.name).catch(()=>null):null;
+      if(!r){ failed.push(t.name); continue; }
+      ra=r.ra/15; dec=r.dec; raTxt=sexTxt(r.ra,true); decTxt=sexTxt(r.dec,false); }
+    const i=tgtAdd(ra,dec,t.name||null,raTxt,decTxt);
+    if(t.name&&isFinite(t.raH)) TARGETS[i].byCoords=true;   // the file's own coordinates, not a lookup of its name
+    if(first<0) first=i; }
+  const added=TARGETS.length-before;
+  msg(failed.length||bad.length?"bad":"","<b>"+escH(file.name)+"</b>: "+added+" target"+(added===1?"":"s")+" added"
+    +(list.length-failed.length-bad.length-added>0?", "+(list.length-failed.length-bad.length-added)+" already in the list":"")
+    +(failed.length?" · not found: "+failed.map(escH).join(", "):"")
+    +(bad.length?" · RA/Dec not understood (RA in hours or degrees, Dec in degrees): "+bad.map(escH).join(", "):""));
+  if(first>=0){ const keep=$("tMsg").innerHTML, cls=$("tMsg").className; tgtUse(first); $("tMsg").innerHTML=keep; $("tMsg").className=cls; }
+  else render(); }
 const escH=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function tgtUI(){                      // the chips, the field card's list and the plot legend
   const L=$("tgtList");
   let html=TARGETS.length?'<span class="tl-k">Targets</span>'+TARGETS.map((t,i)=>
       '<span class="tchip'+(i===ACTIVE?' on':'')+'" style="--c:'+t.col+'"><button type="button" data-use="'+i+'" title="show '+escH(t.name)+'"><i></i>'+escH(t.name)+'</button>'
       +'<button type="button" class="tx" data-del="'+i+'" aria-label="remove '+escH(t.name)+'" title="remove">×</button></span>').join("")
-    +(TARGETS.length>1?'<button type="button" class="tl-clear" id="tgtClear">clear all</button>':""):"";
+    +(TARGETS.length>1?'<button type="button" class="tl-clear" id="tgtClear">clear all</button>':"")
+    +'<button type="button" class="tl-clear" id="tgtSave" title="download the list as a CSV file">save list</button>':"";
+  html+='<button type="button" class="tl-clear" id="tgtLoad" title="add the targets of a CSV file: name,ra,dec per row, or a name per row">'
+    +(TARGETS.length?"load list…":"Load a target list…")+'</button>';
   if(ACTIVE<0&&isFinite(parseAngle($("ra").value))&&isFinite(parseAngle($("dec").value)))   // typed, not listed yet
     html+='<button type="button" class="tl-add" id="tgtAddBtn">+ add these coordinates to the list</button>';
   L.hidden=!html;
+  tgtStore();
   // rebuild only on a change: a redraw between mouse-down and mouse-up (a box losing focus
   // fires one) would replace the button under the pointer and swallow the click
   setHTML(L,html);
@@ -1031,7 +1109,7 @@ function makeCtx(ra,dec,lat,lon,date){
   if(mode==="prec"){ const p=precessOnly(ra,dec,date); return {ra,dec,lat,lon,raApp:p.ra_h,decApp:p.dec,eqeq:0}; }
   return {ra,dec,lat,lon,raApp:ra,decApp:dec,eqeq:0}; }
 function fillStatus(ms, ctx){
-  const date=new Date(ms), p=observedAltAz(date,ctx), pt=classify(p.za,p.alt,lookup(p.az)), sa=sunAlt(date,ctx);
+  const date=new Date(ms), p=observedAltAz(date,ctx), pt=classify(p.za,p.alt,lookup(azConv(p.az))), sa=sunAlt(date,ctx);
   const dark=sa<DARK;
   const ptLabel=pt.level==="visible"?"POINTABLE":pt.level==="security"?"SECURITY ZONE":pt.level==="none"?"NO LIMIT DATA":"NOT POINTABLE";
   const ptb=$("ptBadge"); ptb.className="badge b-"+pt.level; ptb.firstChild.textContent=ptLabel; $("ptSub").textContent=pt.reason;
@@ -1148,7 +1226,8 @@ function render(){
   let summary; const obsNow=isObs(lvl);
   if(obsNow) summary="Observable now ("+sky+")."+(tB_ts?(" Window ends at <b>"+tagT(tB_ts)+"</b>."):"")+(tA_ts?(" Pointing limit at <b>"+tagT(tA_ts)+"</b>."):"");
   else if(lvl==="bright") summary="Pointable now, but the sky is "+sky+"."+(tA_ts?(" Pointing limit at <b>"+tagT(tA_ts)+"</b>."):"")+(tB_ts?(" Dark from <b>"+tagT(tB_ts)+"</b>."):"");
-  else if(lvl==="none") summary="No measured limit at this azimuth — the tool can't confirm a pointing limit here.";
+  else if(lvl==="none") summary=SECTORS.length?"No measured limit at this azimuth — the tool can't confirm a pointing limit here."
+    :"No pointing limits loaded, so nothing is marked pointable. Load your telescope's limits CSV (<a href=\"#\" class=\"lim-open\">site settings</a>).";
   else summary="Not pointable now — past the limit or below the horizon."+(tA_ts?(" Pointable from <b>"+tagT(tA_ts)+"</b>."):"");
   $("summary").innerHTML=(tgtActive()&&TARGETS.length>1?"<b>"+escH(tgtActive().name)+":</b> ":"")+summary;
 
@@ -1308,13 +1387,19 @@ function buildScopeSelect(){ const sel=$("scope"); const groups={};
   html+='<option value="custom">Custom…</option>'; sel.innerHTML=html; sel.value="0"; }
 function applyScope(){ const v=$("scope").value; if(v==="custom") return;
   const s=SITES[+v]; $("lat").value=s[2]; $("lon").value=s[3]; $("alt").value=s[4]; siteTZ=s[5]; render(); }
-function setCSV(text,label){ const parsed=parseCSV(text); if(!parsed.length){ alert("No usable rows found in that CSV."); return; }
-  SECTORS=parsed; $("csvName").textContent=label; $("limName").textContent=label; render(); }
+const LIM_STORE="skybound.limits.v1";
+function limLabel(label){ $("csvName").textContent=label; $("limName").textContent=label; $("csvReset").hidden=!SECTORS.length; }
+function setCSV(text,label,quiet){ const parsed=parseCSV(text); if(!parsed.length){ if(!quiet) alert("No usable rows found in that CSV."); return false; }
+  SECTORS=parsed; limLabel(label);
+  if(!quiet) try{ localStorage.setItem(LIM_STORE,JSON.stringify({text,label})); }catch(e){ /* this visit only */ }
+  render(); return true; }
+function clearCSV(){ SECTORS=[]; limLabel("none loaded"); try{ localStorage.removeItem(LIM_STORE); }catch(e){} render(); }
 function shiftWhen(days,months){ let ms=parseISO($("when").value); const d=lp(ms);
   ms=Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+months,d.getUTCDate()+days,d.getUTCHours(),d.getUTCMinutes(),d.getUTCSeconds())-siteTZ*60000;
   liveMode=false; $("when").value=fmtISO(ms); render(); }
 $("tgtList").addEventListener("click",e=>{ const u=e.target.closest("[data-use]"), d=e.target.closest("[data-del]");
   if(d) tgtDel(+d.dataset.del); else if(u) tgtUse(+u.dataset.use); else if(e.target.id==="tgtClear") tgtClear();
+  else if(e.target.id==="tgtSave") tgtSaveFile(); else if(e.target.id==="tgtLoad") $("tgtFile").click();
   else if(e.target.id==="tgtAddBtn"){ tgtCommit(); render(); } });
 $("amTgtLegend").addEventListener("click",e=>{ const u=e.target.closest("[data-use]"); if(u) tgtUse(+u.dataset.use); });
 $("scope").addEventListener("change",applyScope);
@@ -1326,11 +1411,16 @@ const TEMPLATE_CSV=
 # zenit_angle_max   = the hard pointing limit (past it = not reachable)
 # zenit_angle_security = a caution threshold between free and max
 # Leave a sector at zenit_angle_max = 90 (or >=85) where you have no measured mount limit -> SkyBound shows "no limit data" there.
+# The rows below are an EXAMPLE, not a real telescope: replace them with your own limits.
 azimute_from,azimute_to,zenit_angle_max,zenit_angle_security,zenit_angle_free
-0,90,75,70,65
-90,180,75,70,65
-180,270,75,70,65
-270,360,75,70,65
+0,45,58,52,45
+45,90,75,70,65
+90,135,75,70,65
+135,180,78,73,68
+180,225,78,73,68
+225,270,75,70,65
+270,315,75,70,65
+315,360,58,52,45
 `;
 function downloadCSV(text,name){ const b=new Blob([text],{type:"text/csv"}); const u=URL.createObjectURL(b);
   const a=document.createElement("a"); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); }
@@ -1357,26 +1447,30 @@ $("alt").addEventListener("change",()=>{ $("scope").value="custom"; render(); })
 $("when").addEventListener("change",()=>{ liveMode=false; render(); });
 ["ra","dec"].forEach(id=>$(id).addEventListener("keydown",e=>{ if(e.key==="Enter") render(); }));
 $("csvBtn").addEventListener("click",()=>$("csvFile").click());
+$("tgtFile").addEventListener("change",e=>{ const f=e.target.files[0]; e.target.value=""; if(f) tgtLoadFile(f); });
 $("csvFile").addEventListener("change",e=>{ const f=e.target.files[0]; if(!f) return;
   const r=new FileReader(); r.onload=()=>setCSV(r.result,f.name); r.readAsText(f); });
-$("csvReset").addEventListener("click",()=>setCSV(PLACEHOLDER_CSV,"placeholder (built-in)"));
+$("csvReset").addEventListener("click",clearCSV);
 $("toggleWins").addEventListener("click",()=>{ const w=$("windows"); const hidden=w.style.display==="none";
   w.style.display=hidden?"":"none"; $("toggleWins").textContent=hidden?"Hide list":"Show list";
   $("toggleWins").setAttribute("aria-expanded",String(hidden)); });
-$("openSite").addEventListener("click",e=>{ e.preventDefault(); const d=$("siteAdv"); d.open=true; d.scrollIntoView({behavior:"smooth",block:"start"}); });
+const openSite=e=>{ e.preventDefault(); const d=$("siteAdv"); d.open=true; d.scrollIntoView({behavior:"smooth",block:"start"}); };
+$("openSite").addEventListener("click",openSite);
+$("summary").addEventListener("click",e=>{ if(e.target.closest(".lim-open")) openSite(e); });
 $("airmass").addEventListener("mousemove",onAmMove);
 $("airmass").addEventListener("mouseleave",hideTip);
-window.addEventListener("resize",()=>{ if(SECTORS.length) render(); });
+window.addEventListener("resize",()=>render());
 
 buildScopeSelect();
 $("when").value=fmtISO(Date.now());
-SECTORS=parseCSV(PLACEHOLDER_CSV);
+tgtRestore();                          // first: a redraw stores the list, so it must be back in place
+try{ const v=JSON.parse(localStorage.getItem(LIM_STORE)||"null"); if(v&&v.text) setCSV(v.text,v.label||"your limits",true); }catch(e){ /* none kept */ }
 render();
 </script>
-<script src="js/lookup.js"></script>
-<script src="js/fov.js"></script>
-<script src="js/hips.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/field.js"></script>
+<script src="js/lookup.js?v=1.0.0"></script>
+<script src="js/fov.js?v=1.0.0"></script>
+<script src="js/hips.js?v=1.0.0"></script>
+<script src="js/engine.js?v=1.0.0"></script>
+<script src="js/field.js?v=1.0.0"></script>
 </body>
 </html>

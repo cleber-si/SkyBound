@@ -968,6 +968,7 @@ class TestServe(unittest.TestCase):
         self.assertIn(b"SkyBound", body)
         code, ctype, _ = self.raw("/js/field.js")
         self.assertEqual((code, ctype.split(";")[0]), (200, "text/javascript"))
+        self.assertEqual(self.raw("/js/field.js?v=1.0.0")[0], 200)          # the page asks with ?v=
         # nothing outside the folder, no hidden files, no unknown types
         for bad in ("/../../etc/passwd", "/%2e%2e/%2e%2e/etc/passwd", "/.git/config", "/s4field/s4field.pyc"):
             self.assertEqual(self.raw(bad)[0], 404, bad)
@@ -1227,6 +1228,23 @@ class TestFilters(unittest.TestCase):
                               airmass=1.06, fwhm_plan=2.49, fwhm_best=2.49,
                               filters=frozenset(set(F.FILTERS) - {"trails"}))
         self.assertFalse(no_trails.settings.smear)
+
+
+class TestPageVersion(unittest.TestCase):
+    # index.html asks for its scripts with ?v=<version>, so a browser never mixes a new
+    # page with scripts kept from an older one; that version must be the header's
+    def test_script_versions_match_header(self):
+        import re
+        root = F.site_root()
+        if root is None:
+            self.skipTest("s4field.py is not inside a SkyBound folder")
+        with open(os.path.join(root, "index.html"), encoding="utf-8") as f:
+            page = f.read()
+        ver = re.search(r'<div class="ver">v([0-9][^<]*)</div>', page).group(1)
+        scripts = re.findall(r'<script src="(js/[^"]+)"', page)
+        self.assertTrue(scripts)
+        for src in scripts:
+            self.assertTrue(src.endswith("?v=" + ver), f"{src} is not asked for as version {ver}")
 
 
 if __name__ == "__main__":

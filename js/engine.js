@@ -38,6 +38,8 @@ const S4Engine = (() => {
     return u ? (u.endsWith("/") ? u : u + "/") : PYODIDE;
   }
   const site = () => new URL(".", location.href).href;
+  // the ?v=<version> this file was loaded with (index.html), passed on to the worker
+  const VER = (() => { try { const q = new URL(document.currentScript.src).search; return q || ""; } catch (e) { return ""; } })();
 
   function start() {
     if (boot) return boot;
@@ -50,7 +52,7 @@ const S4Engine = (() => {
     progress = { step: 0, steps: STEPS, text: "starting" };
     setState("loading");
     boot = new Promise((resolve, reject) => {
-      worker = new Worker("js/engine-worker.js");
+      worker = new Worker("js/engine-worker.js" + VER);   // ?v=: never an older copy
       worker.onmessage = (ev) => {
         const m = ev.data || {};
         if (m.type === "progress") {
