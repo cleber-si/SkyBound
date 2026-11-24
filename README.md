@@ -91,6 +91,12 @@ The helper needs Python 3.9 or newer with numpy (matplotlib only for its command
 
 s4field also works on its own from the command line. Its rules, validation and options are documented in [`s4field/S4FIELD.md`](s4field/S4FIELD.md).
 
+### s4field in the browser (no install)
+
+The comparison-field panel can also run s4field inside the browser: click **Compute here, in this browser**. The page downloads Python and numpy once (Pyodide 0.29.5, about 11 MB, kept by the browser) and runs the same `s4field/s4field.py` in a Web Worker ([`js/engine-worker.js`](js/engine-worker.js), started by [`js/engine.js`](js/engine.js)). It answers exactly what the helper answers; the Gaia star lists it downloads are kept in the browser, so a target used once works offline later. The choice is remembered; **Switch off** goes back to the helper.
+
+It needs the archives to let web pages read them (CORS). [`tools/archive_check.html`](tools/archive_check.html) asks each one (ESA, GAVO, Sesame, NASA Exoplanet Archive) and reports which do. In the November 2026 checks, GAVO answered web pages and the ESA archive did not; the engine then uses GAVO's reduced Gaia DR3 list (no variability or non-single-star flags, g/r/i/z from colour relations) and says so on the field card. In the browser the field is requested by coordinates, since the NASA Exoplanet Archive doesn't answer web pages either. For testing, `?pyodide=URL` loads Pyodide from somewhere other than its CDN.
+
 ### On GitHub Pages
 
 SkyBound is a static page, so GitHub Pages can serve it as it is: `index.html` at the repository root, with `.nojekyll` so every file is served unchanged. Before publishing:
@@ -119,13 +125,16 @@ The message under the name box says which source answered. `tools/lookup_test.ht
 | Path | What it is |
 |---|---|
 | `index.html` | SkyBound: page, styles and sky calculations |
-| `js/field.js` | Field card (comparison field and mosaics) and name lookup (talks to the s4field helper) |
+| `js/field.js` | Field card (comparison field and mosaics) and name lookup (talks to s4field: the helper or the in-browser engine) |
+| `js/engine.js` | Starts s4field inside the browser (Pyodide in a Web Worker) and passes the field card's requests to it |
+| `js/engine-worker.js` | The Web Worker: loads Pyodide, numpy and `s4field/s4field.py`, keeps the Gaia star lists in the browser |
+| `js/hips.js` | Sky images behind the field (DSS2, 2MASS, AllWISE, …) drawn from HiPS tiles |
 | `js/fov.js` | Instrument fields of view: built-in SPARC4, the Aladin FoV parser, roles, per-instrument settings, the New FoV builder, mosaic tiling, the browser's FoV library |
 | `js/lookup.js` | Name lookup without the helper: online from the browser, then the reference tables |
 | `js/targets.js` | Offline name index, built by `tools/build_targets.py` (not in the repository until you build it) |
 | `s4field/` | s4field: field finder, its documentation and tests |
 | `assets/` | Logo files: mark, lockups (light and dark), app icon, favicon source, apple-touch-icon |
-| `tools/` | `build_targets.py` (the offline name index) and browser checks: `cors_test.html`, `cors_test2.html` (which services a web page can reach), `helper_test.html` (is the helper reachable), `lookup_test.html` (which lookup layers work), `fov_test.html` (the FoV parser on `fov_samples/`: Aladin files of SPARC4, Subaru HSC and FOCAS IFU, WEAVE LIFU, Seimei TriCCS and KOOLS-IFU, an approximate GMOS-N box, and the orientation check) |
+| `tools/` | `build_targets.py` (the offline name index) and browser checks: `archive_check.html` (which archives the in-browser engine can reach), `cors_test.html`, `cors_test2.html` (which services a web page can reach), `helper_test.html` (is the helper reachable), `lookup_test.html` (which lookup layers work), `fov_test.html` (the FoV parser on `fov_samples/`: Aladin files of SPARC4, Subaru HSC and FOCAS IFU, WEAVE LIFU, Seimei TriCCS and KOOLS-IFU, an approximate GMOS-N box, and the orientation check) |
 | `cones/` | Downloaded Gaia cones (created by s4field; not in git) |
 
 ## Tests

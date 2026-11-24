@@ -72,9 +72,24 @@ const Field = (() => {
   function setHelper(on) {
     try { localStorage.setItem(HELPER_PREF, on ? "on" : "off"); } catch (e) { /* this session only */ }
     st.helperPref = on;
+    if (on && typeof S4Engine !== "undefined" && S4Engine.enabled()) S4Engine.setEnabled(false);   // one or the other
+  }
+
+  // s4field runs either as the helper on this computer or as the engine in this
+  // browser (js/engine.js); the visitor picks one, and requests go to it
+  const ENGINE = typeof S4Engine !== "undefined" ? S4Engine : null;
+  const useEngine = () => !!(ENGINE && ENGINE.enabled() && !(st.helperPref ?? helperOn()));
+  async function viaEngine(method, path, body, ms) {
+    const u = new URL(path, "http://s4field.invalid");
+    let r;
+    try { r = await ENGINE.request(method, u.pathname, Object.fromEntries(u.searchParams), body, ms); }
+    catch (e) { throw new Error(e.message === "TIMEOUT" ? "TIMEOUT" : "HELPER_DOWN"); }
+    if (r.status >= 400) throw new Error((r.body && r.body.error) || `HTTP ${r.status}`);
+    return r.body;
   }
 
   async function api(path, ms = 180000) {
+    if (useEngine()) return viaEngine("GET", path, null, ms);
     if (!(st.helperPref ?? helperOn())) throw new Error("HELPER_DOWN");   // turned off: as if not running
     const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), ms);
     let r;
@@ -112,36 +127,85 @@ const Field = (() => {
       <p>Next time: just start s4field (step 3) and open ${localLink}.</p></details>`;
   const btn = (id, text, primary) => `<button type="button" class="${primary ? "btn-primary" : "btn-ghost"} btn-sm hlp-btn" id="${id}">${text}</button>`;
   // the hosted page, helper not turned on: what it is, the one thing to click, and how to get it
-  const offHtml = () => `<div class="hlp-head"><b>Comparison stars need s4field running on this computer.</b>
-        This website can't rank them by itself yet: s4field is a small Python program, part of SkyBound, that does it on
-        your machine. Everything else here works without it.</div>
+  const engineBtn = () => (ENGINE && ENGINE.supported()
+    ? `<div class="hlp-act">${btn("fEngineOn", "Compute here, in this browser", true)}
+        <span class="hlp-alt">A one-time download of about ${ENGINE.SIZE_MB} MB (Python and numpy, kept by your browser);
+        nothing to install. The same s4field, a little slower.</span></div>`
+    : "");
+  const offHtml = () => `<div class="hlp-head"><b>Comparison stars need s4field</b>, SkyBound's ranking program.
+        It can run here in your browser, or on this computer as a helper. Everything else here works without it.</div>
+      ${engineBtn()}
       <div class="hlp-act">${SAFARI
         ? `<span class="hlp-alt">Safari doesn't let this website reach s4field. Start it, then open ${localLink} (the same SkyBound, connected).</span>`
-        : `${btn("fHelperOn", "Connect to s4field on this computer", true)}
+        : `${btn("fHelperOn", "Connect to s4field on this computer", !(ENGINE && ENGINE.supported()))}
         <span class="hlp-alt">Already running it? Connect, or open ${localLink}. Never set it up? Open the steps below.</span>`}</div>${INSTALL}`;
   const lookingHtml = () => `looking for s4field on this computer… If it isn't running, start it now: ${START}`
       + (LOCAL_PAGE ? "" : ". If your browser asks to let this site reach apps or devices on this computer, <b>allow</b> it")
       + `. SkyBound connects by itself. ${LOCAL_PAGE ? "" : btn("fHelperOff", "Cancel")}${LOCAL_PAGE ? "" : INSTALL}`;
   const downHtml = () => (LOCAL_PAGE
     ? `not running. From the SkyBound folder run ${START}, then ${btn("fRetry", "Check again")}`
+      + (ENGINE && ENGINE.supported() ? ` or ${btn("fEngineOn", "compute in this browser instead")}` : "")
     : `s4field could not be reached on this computer. Is it running (${START})? If it is, open ${localLink}: it serves
        SkyBound itself, connected, in any browser. ${SAFARI ? "Safari never lets this website reach it."
        : "If you blocked this site from reaching apps on this computer, allow it again in the site settings (the icon left of the address)."}
-       ${btn("fRetry", "Try again", true)} ${btn("fHelperOff", "Don't use it")}${INSTALL}`);
+       ${btn("fRetry", "Try again", !(ENGINE && ENGINE.supported()))} ${btn("fHelperOff", "Don't use it")}`
+      + engineBtn() + INSTALL);
   const okHtml = (js) => `s4field ${esc(js.s4field)} · ${js.cached.length} cached cone${js.cached.length === 1 ? "" : "s"}`
       + (LOCAL_PAGE ? "" : ` ${btn("fHelperOff", "Disconnect")}`);
+
+  // the engine in this browser: loading, ready or failed
+  function engineHtml() {
+    const s = ENGINE.state();
+    if (s === "ready") {
+      const js = ENGINE.status() || { cached: [] };
+      return ["ok", "IN BROWSER", `s4field ${esc(js.s4field)} running in this browser · ${js.cached.length} star list${js.cached.length === 1 ? "" : "s"} kept here `
+        + btn("fEngineOff", "Switch off")];
+    }
+    if (s === "failed")
+      return ["bad", "ENGINE", `the in-browser engine did not start: ${esc(ENGINE.error() || "unknown error")}. `
+        + `${btn("fEngineRetry", "Try again", true)} ${btn("fEngineOff", "Don't use it")}`];
+    const p = ENGINE.progress() || { step: 0, steps: 3, text: "starting" };
+    return ["wait", "LOADING", `preparing s4field in this browser: ${esc(p.text)}… (step ${Math.max(1, p.step)} of ${p.steps}`
+      + `; the first time downloads about ${ENGINE.SIZE_MB} MB, later visits start from your browser's copy) ${btn("fEngineOff", "Cancel")}`];
+  }
+  function engineStatus() {
+    const [kind, word, html] = engineHtml();
+    setStatus(kind, word, html);
+    if (ENGINE.state() === "ready") {
+      const js = ENGINE.status();
+      st.helper = js && js.s4field;
+      if (st.js && st.js.nohelper) { st.key = null; compute(true); }   // drawn without it: now with its stars
+    }
+  }
+  if (ENGINE) ENGINE.on((ev) => {
+    if (!useEngine()) return;
+    if (ev.type === "state" || ev.type === "progress" || ev.type === "status") engineStatus();
+    if (ev.type === "updated") {                // a better star list arrived in the background
+      engineStatus();
+      const waiting = st.js && st.js.catalogue && (st.js.catalogue.lite || /SMALLER than this FoV/.test(st.js.catalogue.note));
+      if (waiting) { st.key = null; compute(true); }
+    }
+  });
 
   // no answer: "not connected" if the user hasn't turned the helper on, else "not reachable"
   // (unless SkyBound is still looking for it after a Connect)
   function noHelperStatus() {
-    if (!(st.helperPref ?? helperOn())) setStatus("off", "NOT CONNECTED", offHtml());
+    if (useEngine()) engineStatus();
+    else if (!(st.helperPref ?? helperOn())) setStatus("off", "NOT CONNECTED", offHtml());
     else if (Date.now() >= (st.pollUntil || 0)) setStatus("bad", "NO HELPER", downHtml());
   }
 
   // the buttons of the status line (rebuilt with it)
   function statusClick(ev) {
     const id = ev.target.id;
-    if (id === "fHelperOn") { setHelper(true); ping(true); }
+    if (id === "fEngineOn" || id === "fEngineRetry") {
+      setHelper(false); clearTimeout(st.pollTimer);
+      ENGINE.setEnabled(true);
+      ENGINE.start().catch(() => {});
+      engineStatus();
+    }
+    else if (id === "fEngineOff") { ENGINE.setEnabled(false); ping(); }
+    else if (id === "fHelperOn") { setHelper(true); ping(true); }
     else if (id === "fRetry") ping(true);
     else if (id === "fHelperOff") { setHelper(false); clearTimeout(st.pollTimer); ping(); }
   }
@@ -150,6 +214,11 @@ const Field = (() => {
   // s4field or allowing the browser's prompt is enough, with no further click
   async function ping(look) {
     clearTimeout(st.pollTimer);
+    if (useEngine()) {                         // s4field in this browser: start it (from the cache after the first time)
+      ENGINE.start().catch(() => {});
+      engineStatus();
+      return ENGINE.state() === "ready";
+    }
     if (!(st.helperPref ?? helperOn())) {     // a hosted page, helper not turned on: don't knock
       setStatus("off", "NOT CONNECTED", offHtml());
       return false;
@@ -250,6 +319,9 @@ const Field = (() => {
     const t = listed();
     return t && t.named ? t.name : coordText();
   }
+  // what s4field is asked for: the name (the helper resolves it), or, in the browser,
+  // the coordinates the page already has (web pages may not ask the Exoplanet Archive)
+  const reqTarget = () => (useEngine() ? coordText() || fieldTarget() : fieldTarget());
   const targetLabel = () => {
     const t = listed();
     if (!fieldTarget()) return "";
@@ -278,6 +350,8 @@ const Field = (() => {
     el("tFind").disabled = true;
     nameMsg("", `looking up <b>${esc(text)}</b>…`);
     try {
+      // with s4field in this browser, names are looked up by the page itself (it may still be loading)
+      if (useEngine()) throw new Error("HELPER_DOWN");
       const js = await api("/api/resolve?target=" + encodeURIComponent(text), 90000);
       useName(text, js.ra, js.dec, `${esc(js.source)}${js.note ? " · " + esc(js.note) : ""}`);
       if (el("fieldBody").style.display !== "none") compute(false);   // straight to its field
@@ -376,7 +450,7 @@ const Field = (() => {
     const s = sb(), target = fieldTarget();
     if (!target) throw new Error("Give the target a name or valid RA/Dec at the top of the page.");
     const p = new URLSearchParams();
-    p.set("target", target);
+    p.set("target", reqTarget());
     p.set("mode", el("fMode").value);
     if (st.at) p.set("at", `${st.at.e.toFixed(1)},${st.at.n.toFixed(1)}`);
     p.set("max_comps", String(maxComps()));
@@ -474,7 +548,7 @@ const Field = (() => {
         st.key = key; st.computed = true; st.lastTarget = fieldTarget();
         drawGeneric(genericFrom(null));
       }
-      else if (e.message === "TIMEOUT") showError("The helper did not answer within 3 minutes (a slow catalogue download?). Try again.");
+      else if (e.message === "TIMEOUT") showError("s4field did not answer within 3 minutes (a slow catalogue download?). Try again.");
       else showError(esc(e.message).replace(/\n/g, "<br>"));
     } finally {
       st.busy = false;
@@ -500,6 +574,7 @@ const Field = (() => {
   }
 
   async function post(path, body) {
+    if (useEngine()) return viaEngine("POST", path, body, 180000);
     let r;
     try {
       r = await fetch(HELPER + path, { method: "POST", headers: { "Content-Type": "application/json" },
@@ -530,7 +605,7 @@ const Field = (() => {
   }
   function genericParams() {
     const s = sb(), cfg = FoV.settingsOf(st.fov), p = new URLSearchParams();
-    p.set("target", fieldTarget());
+    p.set("target", reqTarget());
     p.set("band", cfg.band);
     p.set("margin", String(cfg.margin));
     p.set("iso", String(cfg.iso));
@@ -595,7 +670,7 @@ const Field = (() => {
       drawGeneric(js);
     } catch (e) {
       if (st.js && st.lastTarget !== target) { el("fOut").hidden = true; st.js = null; st.key = null; }
-      showError(e.message === "TIMEOUT" ? "The helper did not answer within 3 minutes (a slow catalogue download?). Try again."
+      showError(e.message === "TIMEOUT" ? "s4field did not answer within 3 minutes (a slow catalogue download?). Try again."
                                         : esc(e.message).replace(/\n/g, "<br>"));
     } finally {
       st.busy = false;
@@ -695,9 +770,12 @@ const Field = (() => {
         ${how}${js.sky ? ` <span id="fNStarMeta"></span>` : ""}<br>
         ${js.sky ? `Epoch ${t.epoch.toFixed(2)}. <span style="color:var(--grey-2)">${esc(js.catalogue.note)}</span>` : ""}</div>`;
     const notes = [];
-    if (js.nohelper) notes.push({ w: (st.helperPref ?? helperOn())
+    if (js.nohelper) notes.push({ w: useEngine()
+      ? (ENGINE.state() === "failed" ? "The in-browser engine did not start (see above): the field is drawn on the sky image only."
+                                     : "Drawn on the sky image for now: s4field is getting ready in this browser (see above).")
+      : (st.helperPref ?? helperOn())
       ? "s4field is not answering: the field is drawn on the sky image only, without Gaia stars or comparison stars."
-      : "Drawn on the sky image only: Gaia stars and comparison stars need s4field (see Connect to s4field, above)." });
+      : "Drawn on the sky image only: Gaia stars and comparison stars need s4field (see above)." });
     const coneR = coneRadius(js);
     if (js.sky && A.outer > coneR * 0.95)
       notes.push({ w: `This FoV reaches ${(A.outer / 60).toFixed(1)}′ from its centre, but the Gaia stars cover only `

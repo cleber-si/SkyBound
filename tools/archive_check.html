@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyBound · can this browser reach the archives?</title>
+<style>
+  body{font:15px/1.5 system-ui,sans-serif;margin:2rem auto;max-width:56rem;padding:0 1rem;color:#1e293b}
+  h1{font-size:1.3rem} table{border-collapse:collapse;width:100%;margin:1rem 0}
+  td,th{border-bottom:1px solid #e2e8f0;padding:.45rem .5rem;text-align:left;vertical-align:top}
+  .ok{color:#15803d;font-weight:600} .bad{color:#b91c1c;font-weight:600} .wait{color:#64748b}
+  code{background:#f1f5f9;padding:0 .25rem;border-radius:3px} button{font:inherit;padding:.35rem .9rem}
+  #copy{white-space:pre-wrap;background:#f8fafc;border:1px solid #e2e8f0;padding:.6rem;font:12px/1.4 ui-monospace,monospace}
+</style>
+</head>
+<body>
+<h1>Can this browser reach the archives SkyBound uses?</h1>
+<p>SkyBound's in-browser engine downloads Gaia stars and looks up names straight from these services. A web page
+  may only read another site's answer if that site allows it (CORS). This page asks each one a tiny question and
+  says which answer. Nothing is installed or kept.</p>
+<button id="go">Check again</button>
+<table><thead><tr><th>Service</th><th>Used for</th><th>Result</th></tr></thead><tbody id="rows"></tbody></table>
+<p>To report back, copy this:</p>
+<div id="copy"></div>
+<script>
+"use strict";
+const form = (o) => new URLSearchParams(o).toString();
+const CHECKS = [
+  { name: "ESA Gaia Archive (TAP, sync)", use: "full Gaia DR3 cones",
+    url: "https://gea.esac.esa.int/tap-server/tap/sync",
+    init: { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form({ REQUEST: "doQuery", LANG: "ADQL", FORMAT: "csv", QUERY: "SELECT TOP 1 source_id FROM gaiadr3.gaia_source" }) },
+    ok: (t) => /source_id/.test(t) },
+  { name: "ESA Gaia Archive (TAP, async job)", use: "how s4field asks ESA",
+    url: "https://gea.esac.esa.int/tap-server/tap/async",
+    init: { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form({ REQUEST: "doQuery", LANG: "ADQL", FORMAT: "csv", PHASE: "RUN", QUERY: "SELECT TOP 1 source_id FROM gaiadr3.gaia_source" }) },
+    ok: (t) => /jobId|PENDING|QUEUED|EXECUTING|COMPLETED|source_id/i.test(t) },
+  { name: "GAVO Data Center (TAP, sync)", use: "reduced Gaia cones when ESA is down",
+    url: "https://dc.g-vo.org/tap/sync",
+    init: { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: form({ REQUEST: "doQuery", LANG: "ADQL", FORMAT: "csv", MAXREC: "1", QUERY: "SELECT TOP 1 source_id FROM gaia.dr3lite" }) },
+    ok: (t) => /source_id/.test(t) },
+  { name: "Sesame, CfA mirror", use: "names to coordinates (tried first)",
+    url: "https://vizier.cfa.harvard.edu/viz-bin/nph-sesame/SNV?AU%20Mic", init: {}, ok: (t) => /%J/.test(t) },
+  { name: "Sesame, Strasbourg", use: "names to coordinates",
+    url: "https://cds.unistra.fr/cgi-bin/nph-sesame/SNV?AU%20Mic", init: {}, ok: (t) => /%J/.test(t) },
+  { name: "NASA Exoplanet Archive (TAP)", use: "TOI and planet names",
+    url: "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?" + form({ query: "select top 1 pl_name from ps", format: "csv" }),
+    init: {}, ok: (t) => /pl_name/.test(t) },
+];
+async function check(c, td) {
+  td.className = "wait"; td.textContent = "asking…";
+  const ctl = new AbortController(), timer = setTimeout(() => ctl.abort(), 30000), t0 = performance.now();
+  try {
+    const r = await fetch(c.url, { ...c.init, signal: ctl.signal, cache: "no-store" });
+    const text = await r.text(), ms = Math.round(performance.now() - t0);
+    if (r.ok && c.ok(text)) { td.className = "ok"; td.textContent = `OK (${ms} ms)`; return `OK ${ms} ms`; }
+    td.className = "bad"; td.textContent = `answered HTTP ${r.status}, but not as expected (${ms} ms)`; return `HTTP ${r.status}`;
+  } catch (e) {
+    const why = e.name === "AbortError" ? "no answer within 30 s" : "blocked: the site does not allow web pages (CORS), or it is unreachable";
+    td.className = "bad"; td.textContent = why; return why;
+  } finally { clearTimeout(timer); }
+}
+async function run() {
+  const body = document.getElementById("rows"); body.innerHTML = "";
+  const tds = CHECKS.map((c) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${c.name}</td><td>${c.use}</td><td></td>`;
+    body.appendChild(tr);
+    return tr.lastChild;
+  });
+  const res = await Promise.all(CHECKS.map((c, i) => check(c, tds[i])));
+  document.getElementById("copy").textContent = `SkyBound archive check · ${location.origin} · ${navigator.userAgent}\n`
+    + CHECKS.map((c, i) => `${c.name}: ${res[i]}`).join("\n");
+}
+document.getElementById("go").onclick = run;
+run();
+</script>
+</body>
+</html>
