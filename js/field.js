@@ -148,7 +148,8 @@ const Field = (() => {
     : `s4field could not be reached on this computer. Is it running (${START})? If it is, open ${localLink}: it serves
        SkyBound itself, connected, in any browser. ${SAFARI ? "Safari never lets this website reach it."
        : "If you blocked this site from reaching apps on this computer, allow it again in the site settings (the icon left of the address)."}
-       ${btn("fRetry", "Try again", true)} ${btn("fHelperOff", "Don't use it")}${INSTALL}`);
+       ${btn("fRetry", "Try again", !(ENGINE && ENGINE.supported()))} ${btn("fHelperOff", "Don't use it")}`
+      + engineBtn() + INSTALL);
   const okHtml = (js) => `s4field ${esc(js.s4field)} · ${js.cached.length} cached cone${js.cached.length === 1 ? "" : "s"}`
       + (LOCAL_PAGE ? "" : ` ${btn("fHelperOff", "Disconnect")}`);
 
