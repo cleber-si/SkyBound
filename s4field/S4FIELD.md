@@ -12,7 +12,7 @@ For one target it reports:
 
 Since 0.13 it also ranks comparison stars for **any other instrument** whose field of view SkyBound has loaded (an Aladin FoV file or its New FoV form), in basic mode and one band: section 12b.
 
-Version 0.13.2 · By Cleber Silva · UFC/MALTED
+Version 0.14.0 · By Cleber Silva · UFC/MALTED
 
 ---
 
@@ -608,6 +608,7 @@ The network resolvers are tested with mocked responses, so the suite runs offlin
 
 ## 14. Version history
 
+- **0.14.0** (2026-11-24): faster and much lighter on memory, same answers. A loaded FoV's search runs in batches of 1024 pointings and looks up only the stars a batch can reach; the comparison choice stops once every pointing has its N stars; faster raster lookups and JSON. ROBO43 (42' x 28', 10 201 pointings x 6115 stars): 4.6 s and 2.6 GB peak -> 0.9 s and 0.2 GB; SPARC4 unchanged (0.1-0.2 s), its JSON twice as fast. Every output checked identical to 0.13.2 (10 cases), and the tests now compare batched with unbatched searches bit for bit.
 - **0.13.2** (2026-11-24): runs on Python 3.9-3.11 again (one f-string needed 3.12); `--serve` also serves the SkyBound page at http://127.0.0.1:8417/, so any browser, Safari included, reaches the helper; certifi's certificates when Python has none (python.org builds for macOS); a clear message on Python < 3.9.
 - **0.13.1** (2026-11-13): a loaded FoV is searched over its whole size (was at most 600″), and the cone also holds the guider (`outer` in `POST /api/fov`).
 - **0.13.0** (2026-11-13)

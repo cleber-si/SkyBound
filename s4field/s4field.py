@@ -36,7 +36,7 @@ By Cleber Silva · UFC/MALTED
 
 from __future__ import annotations
 
-__version__ = "0.13.2"
+__version__ = "0.14.0"
 
 import argparse
 import math
@@ -553,16 +553,28 @@ class FovMask:
                     ok[ok] = _segment_distance(pts, X[ok], Y[ok]) >= margin
             self.mask[j0:j1 + 1, i0:i1 + 1] |= ok
         self.area = float(self.mask.sum()) * self.res ** 2      # [arcsec^2]
+        # the raster with a one-cell False border, flat: a lookup needs no bounds test
+        self._flat = np.pad(self.mask, 1).ravel()
+
+    def bounds(self):
+        """The raster's extent [arcsec]: (x0, y0, x1, y1) of its cell centres."""
+        ny, nx = self.mask.shape
+        return self.x0, self.y0, self.x0 + (nx - 1) * self.res, self.y0 + (ny - 1) * self.res
 
     def inside(self, x, y):
         x, y = np.broadcast_arrays(np.asarray(x, float), np.asarray(y, float))
         i = np.rint((x - self.x0) / self.res)
         j = np.rint((y - self.y0) / self.res)
         ny, nx = self.mask.shape
-        ok = np.isfinite(i) & np.isfinite(j) & (i >= 0) & (i < nx) & (j >= 0) & (j < ny)
-        out = np.zeros(x.shape, bool)
-        out[ok] = self.mask[j[ok].astype(int), i[ok].astype(int)]
-        return out
+        if not (np.isfinite(i).all() and np.isfinite(j).all()):
+            ok = np.isfinite(i) & np.isfinite(j) & (i >= 0) & (i < nx) & (j >= 0) & (j < ny)
+            out = np.zeros(x.shape, bool)
+            out[ok] = self.mask[j[ok].astype(int), i[ok].astype(int)]
+            return out
+        # off the raster -> its border (-1 or n), which is False
+        k = (np.clip(j, -1, ny).astype(np.intp) + 1) * (nx + 2)
+        k += np.clip(i, -1, nx).astype(np.intp) + 1
+        return self._flat[k]
 
 
 class FovGeometry:
@@ -1023,11 +1035,29 @@ def _usable(b, dE, dN, tab, ok, smear, per, s):
     E, N = np.asarray(tab["E"]), np.asarray(tab["N"])
     dE, dN = np.asarray(dE, float).reshape(-1, 1), np.asarray(dN, float).reshape(-1, 1)
     src, H, idx = smear[b]
-    x, y = E[idx][None, :] - dE, N[idx][None, :] - dN
-    inside = _inside(per[b], x, y, s.edge_margin)
-    if s.mode == "polar":
-        ve, vn = _twin(s)
-        inside &= _inside(per[b], x + ve, y + vn, s.edge_margin)
+    fp = per[b]
+    if isinstance(fp, FovMask) and dE.size > 1:
+        # a loaded FoV: only the stars that some pointing here can put on its raster
+        # (and their twins) are looked up; the rest stay False, as they would be
+        ve, vn = _twin(s) if s.mode == "polar" else (0.0, 0.0)
+        bx0, by0, bx1, by1 = fp.bounds()
+        e, n = E[idx], N[idx]
+        near = ((e >= dE.min() + bx0 - abs(ve) - fp.res) & (e <= dE.max() + bx1 + abs(ve) + fp.res)
+                & (n >= dN.min() + by0 - abs(vn) - fp.res) & (n <= dN.max() + by1 + abs(vn) + fp.res))
+        cols = np.where(near)[0]
+        inside = np.zeros((dE.size, idx.size), bool)
+        if cols.size:
+            x, y = e[cols][None, :] - dE, n[cols][None, :] - dN
+            sub = _inside(fp, x, y, s.edge_margin)
+            if s.mode == "polar":
+                sub &= _inside(fp, x + ve, y + vn, s.edge_margin)
+            inside[:, cols] = sub
+    else:
+        x, y = E[idx][None, :] - dE, N[idx][None, :] - dN
+        inside = _inside(fp, x, y, s.edge_margin)
+        if s.mode == "polar":
+            ve, vn = _twin(s)
+            inside &= _inside(fp, x + ve, y + vn, s.edge_margin)
     if src.size:
         on = edge_distance(per[b], E[src][None, :] - dE, N[src][None, :] - dN) > 0
         inside &= ~((on.astype(float) @ H.astype(float)) > 0)
@@ -1059,21 +1089,50 @@ def _choose(dE, dN, tab, it, ok, weight, sigma, per, s, smear):
         score[pos[b]] += weight[idx] / sigma[b][idx] ** 2 * sigma[b][it] ** 2
     order = np.argsort(-score, kind="stable")
     keep = np.zeros((P, allidx.size), bool)
-    for a in range(0, P, 2048):                  # in chunks: P x stars can be large
-        anyin = np.zeros((min(P, a + 2048) - a, allidx.size), bool)
+    b0 = s.bands[0]
+    single = len(s.bands) == 1 and np.array_equal(pos[b0], np.arange(allidx.size))
+    if single:                                   # one band, its stars in order: use it as it is
+        anyin_all = U[b0][1]
+    else:
+        anyin_all = np.zeros((P, allidx.size), bool)
         for b in s.bands:
-            anyin[:, pos[b]] |= U[b][1][a:a + 2048]
-        srt = anyin[:, order]
-        take = srt & (np.cumsum(srt, axis=1, dtype=np.int32) <= n)
-        keep[a:a + 2048, order] = take
+            anyin_all[:, pos[b]] |= U[b][1]
+    # down the stars from the best, a block of columns at a time: a pointing keeps
+    # the first n it can use. Stop once every pointing has n (or no stars are left);
+    # the same as a cumulative sum over all the columns, without touching the rest
+    count = np.zeros(P, np.int32)
+    BLOCK = 64
+    for c0 in range(0, order.size, BLOCK):
+        cols = order[c0:c0 + BLOCK]
+        srt = anyin_all[:, cols]
+        run = np.cumsum(srt, axis=1, dtype=np.int32)
+        run += count[:, None]
+        keep[:, cols] = srt & (run <= n)
+        count = run[:, -1]
+        if count.min() >= n:
+            break
+    if single:                                   # keep is already within the band's usable stars
+        return {b0: (U[b0][0], keep)}
     return {b: (U[b][0], U[b][1] & keep[:, pos[b]]) for b in s.bands}
+
+
+ETA_CHUNK = 1024           # pointings per batch: bounds the memory of a big search
 
 
 def _eta(dE, dN, tab, it, ok, weight, sigma, per, common, s, smear, per_band=False):
     """Worst-band eta = sigma_diff / sigma_target at field centres (dE, dN)
     [arcsec of the field centre East/North of the target]. Shapes broadcast.
-    per_band: {band: eta} instead of the worst."""
-    dE, dN = np.asarray(dE, float), np.asarray(dN, float)
+    per_band: {band: eta} instead of the worst. Every pointing is independent,
+    so a large search runs in batches of ETA_CHUNK (pointings x stars arrays of
+    a 10 000-pointing search over a wide FoV would otherwise take gigabytes)."""
+    dE, dN = np.broadcast_arrays(np.asarray(dE, float), np.asarray(dN, float))
+    if dE.size > ETA_CHUNK:
+        fe, fn = dE.ravel(), dN.ravel()
+        parts = [_eta(fe[a:a + ETA_CHUNK], fn[a:a + ETA_CHUNK], tab, it, ok, weight, sigma, per, common,
+                      s, smear, per_band) for a in range(0, fe.size, ETA_CHUNK)]
+        if per_band:
+            return {b: np.concatenate([p[b] for p in parts]).reshape(dE.shape) for b in s.bands}
+        return np.concatenate(parts).reshape(dE.shape)
     # target position relative to field centre = (-dE, -dN)
     t_in = _inside(common, -dE, -dN, s.edge_margin)
     if s.mode == "polar":
@@ -2382,8 +2441,19 @@ SERVE_PORT = 8417
 
 def _jsonable(x):
     """Plain JSON types; NaN/inf -> null (JSON.parse rejects NaN)."""
+    t = type(x)                                  # the common plain types first: no isinstance chain
+    if t is float:
+        return x if math.isfinite(x) else None
+    if t is int or t is str or t is bool or x is None:
+        return x
+    if t is list and all(type(v) is float and math.isfinite(v) for v in x):
+        return x
     if isinstance(x, dict):
         return {str(k): _jsonable(v) for k, v in x.items()}
+    if isinstance(x, np.ndarray) and x.dtype.kind in "biuf":
+        if x.dtype.kind != "f" or np.isfinite(x).all():
+            return x.tolist()                    # already plain numbers, nested as the array
+        return [_jsonable(v) for v in x]
     if isinstance(x, (list, tuple, np.ndarray)):
         return [_jsonable(v) for v in (x.tolist() if isinstance(x, np.ndarray) else x)]
     if isinstance(x, (bool, np.bool_)):

@@ -1509,6 +1509,35 @@ class TestLoadedFovField(unittest.TestCase):
         import json
         json.dumps(js, allow_nan=False)                           # JavaScript can read it
 
+    def test_batched_search_is_exact(self):
+        # 0.14: the search runs in batches of pointings, looks up only the stars a
+        # batch can reach, and keeps the first N comparisons block by block. The
+        # answer must be bit for bit what one big batch gives, every mode
+        import json
+        for q in ({}, {"twin": "-6.5,-12.1"}, {"max_comps": "0"}, {"max_comps": "2"}):
+            out = []
+            for chunk in (10 ** 9, 37):
+                with mock.patch.object(F, "ETA_CHUNK", chunk):
+                    out.append(json.dumps(F._jsonable(self.run_fov([_square(352)], **q)[1]), sort_keys=True))
+            self.assertEqual(out[0], out[1], q)
+
+    def test_mask_lookup_matches_the_plain_one(self):
+        m = F.FovGeometry([_square(352), {"shape": "circle", "c": [500, 0], "r": 80}]).mask(12)
+        rng = np.random.default_rng(3)
+        x, y = rng.uniform(-700, 700, (40, 50)), rng.uniform(-500, 500, (40, 50))
+        ny, nx = m.mask.shape
+
+        def plain(x, y):                       # the 0.13 lookup
+            i, j = np.rint((x - m.x0) / m.res), np.rint((y - m.y0) / m.res)
+            ok = np.isfinite(i) & np.isfinite(j) & (i >= 0) & (i < nx) & (j >= 0) & (j < ny)
+            out = np.zeros(np.shape(x), bool)
+            out[ok] = m.mask[j[ok].astype(int), i[ok].astype(int)]
+            return out
+        self.assertTrue(np.array_equal(m.inside(x, y), plain(x, y)))
+        x[0, :5] = np.nan                      # not finite: never inside
+        self.assertTrue(np.array_equal(m.inside(x, y), plain(x, y)))
+        self.assertEqual(bool(m.inside(0.0, 0.0)), True)
+
     def test_never_in_a_chip_gap(self):
         chips = [{"shape": "polygon", "pts": [[-352, -352], [-15, -352], [-15, 352], [-352, 352]]},
                  {"shape": "polygon", "pts": [[15, -352], [352, -352], [352, 352], [15, 352]]}]
