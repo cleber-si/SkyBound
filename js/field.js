@@ -93,29 +93,40 @@ const Field = (() => {
     el("fStatus").innerHTML = `<span class="pill ${kind}">${word}</span><div class="fld-status-body">${html}</div>`;
   }
   // how to get the helper running (the hosted page: the visitor may not have SkyBound's files)
+  // Safari never lets an https:// website reach http://127.0.0.1 (WebKit treats it as mixed
+  // content, unlike Chrome, Firefox and Edge): there, SkyBound has to come from s4field itself
+  const SAFARI = /Safari\//.test(navigator.userAgent) && !/Chrome|Chromium|CriOS|Edg|OPR|Firefox|FxiOS/.test(navigator.userAgent);
+  const LOCAL_URL = `${HELPER}/`;
+  const localLink = `<a href="${LOCAL_URL}" target="_blank" rel="noopener"><b>${LOCAL_URL}</b></a>`;
   const INSTALL = `<details class="hlp-how"><summary>First time? Set up s4field (once, a few minutes)</summary><ol>
-      <li>You need Python 3. Install what s4field uses: <code>pip install numpy astropy matplotlib</code>.</li>
+      <li>You need Python 3.9 or newer. Install what s4field uses: <code>pip install numpy astropy</code>
+        (add <code>matplotlib</code> only for its command-line charts).</li>
       <li>Download SkyBound (<a href="${REPO}/archive/refs/heads/main.zip" target="_blank" rel="noopener">zip</a>,
         or <code>git clone ${REPO}.git</code>): s4field comes in it, in the <code>s4field/</code> folder.</li>
       <li>In the SkyBound folder, run ${START} and leave the terminal open. It answers only this
         computer, and keeps the Gaia stars it downloads in <code>cones/</code>, so a target also works offline later.</li>
-      <li>Come back here and click <b>Connect to s4field on this computer</b>. If your browser asks whether this site may
-        reach apps or devices on this computer, allow it.</li></ol>
-      <p>Next time: just start s4field (step 3) and connect.</p></details>`;
+      <li>Open ${localLink}: s4field serves SkyBound itself there, already connected, in any browser (Safari
+        included) and with no permission to grant. Or come back here and click <b>Connect to s4field on this
+        computer</b>; if your browser asks whether this site may reach apps or devices on this computer, allow it.
+        ${SAFARI ? "<b>Safari</b> never lets this website reach s4field: use the address above." : ""}</li></ol>
+      <p>Next time: just start s4field (step 3) and open ${localLink}.</p></details>`;
   const btn = (id, text, primary) => `<button type="button" class="${primary ? "btn-primary" : "btn-ghost"} btn-sm hlp-btn" id="${id}">${text}</button>`;
   // the hosted page, helper not turned on: what it is, the one thing to click, and how to get it
   const offHtml = () => `<div class="hlp-head"><b>Comparison stars need s4field running on this computer.</b>
         This website can't rank them by itself yet: s4field is a small Python program, part of SkyBound, that does it on
         your machine. Everything else here works without it.</div>
-      <div class="hlp-act">${btn("fHelperOn", "Connect to s4field on this computer", true)}
-        <span class="hlp-alt">Already running it? Connect. Never set it up? Open the steps below.</span></div>${INSTALL}`;
+      <div class="hlp-act">${SAFARI
+        ? `<span class="hlp-alt">Safari doesn't let this website reach s4field. Start it, then open ${localLink} (the same SkyBound, connected).</span>`
+        : `${btn("fHelperOn", "Connect to s4field on this computer", true)}
+        <span class="hlp-alt">Already running it? Connect, or open ${localLink}. Never set it up? Open the steps below.</span>`}</div>${INSTALL}`;
   const lookingHtml = () => `looking for s4field on this computer… If it isn't running, start it now: ${START}`
       + (LOCAL_PAGE ? "" : ". If your browser asks to let this site reach apps or devices on this computer, <b>allow</b> it")
       + `. SkyBound connects by itself. ${LOCAL_PAGE ? "" : btn("fHelperOff", "Cancel")}${LOCAL_PAGE ? "" : INSTALL}`;
   const downHtml = () => (LOCAL_PAGE
     ? `not running. From the SkyBound folder run ${START}, then ${btn("fRetry", "Check again")}`
-    : `s4field could not be reached on this computer. Is it running (${START})? If you blocked this site from
-       reaching apps on this computer, allow it again in the site settings (the icon left of the address).
+    : `s4field could not be reached on this computer. Is it running (${START})? If it is, open ${localLink}: it serves
+       SkyBound itself, connected, in any browser. ${SAFARI ? "Safari never lets this website reach it."
+       : "If you blocked this site from reaching apps on this computer, allow it again in the site settings (the icon left of the address)."}
        ${btn("fRetry", "Try again", true)} ${btn("fHelperOff", "Don't use it")}${INSTALL}`);
   const okHtml = (js) => `s4field ${esc(js.s4field)} · ${js.cached.length} cached cone${js.cached.length === 1 ? "" : "s"}`
       + (LOCAL_PAGE ? "" : ` ${btn("fHelperOff", "Disconnect")}`);

@@ -12,7 +12,7 @@ For one target it reports:
 
 Since 0.13 it also ranks comparison stars for **any other instrument** whose field of view SkyBound has loaded (an Aladin FoV file or its New FoV form), in basic mode and one band: section 12b.
 
-Version 0.13.1 · By Cleber Silva · UFC/MALTED
+Version 0.13.2 · By Cleber Silva · UFC/MALTED
 
 ---
 
@@ -39,7 +39,7 @@ Version 0.13.1 · By Cleber Silva · UFC/MALTED
 
 ## 1. Requirements
 
-- Python 3.12 or later
+- Python 3.9 or later (tested on 3.9, 3.10, 3.11 and 3.13)
 - `numpy`, `astropy`, `matplotlib`
 
 ```bash
@@ -608,6 +608,7 @@ The network resolvers are tested with mocked responses, so the suite runs offlin
 
 ## 14. Version history
 
+- **0.13.2** (2026-11-24): runs on Python 3.9-3.11 again (one f-string needed 3.12); `--serve` also serves the SkyBound page at http://127.0.0.1:8417/, so any browser, Safari included, reaches the helper; certifi's certificates when Python has none (python.org builds for macOS); a clear message on Python < 3.9.
 - **0.13.1** (2026-11-13): a loaded FoV is searched over its whole size (was at most 600″), and the cone also holds the guider (`outer` in `POST /api/fov`).
 - **0.13.0** (2026-11-13)
   - Any instrument's field of view (section 12b): `FovGeometry` (polygons and circles, rasterised per margin), `run(..., geometry=)` in basic mode and one band (`V`, `G`, `g`, `r`, `i`, `z`), `Settings.iso_radius` and `Settings.twin` (a polarimeter's second image), `result_json_fov`, `fov_table` and `report_fov`. The helper: `POST /api/fov`, `/api/field?fov=id&band=&margin=&iso=&twin=`, CORS for POST, and `/api/status` gives the cache's last change (`updated`).

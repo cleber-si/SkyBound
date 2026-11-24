@@ -36,7 +36,7 @@ By Cleber Silva · UFC/MALTED
 
 from __future__ import annotations
 
-__version__ = "0.13.1"
+__version__ = "0.13.2"
 
 import argparse
 import math
@@ -44,6 +44,10 @@ import os
 import re as _re
 import time as _time
 import sys
+
+if sys.version_info < (3, 9):                 # before anything newer is parsed or imported
+    sys.exit(f"s4field needs Python 3.9 or newer; this is Python {sys.version.split()[0]} "
+             f"({sys.executable}). Start it with a newer python3.")
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -1475,7 +1479,7 @@ def report(res: Result) -> str:
     if res.stars.meta.get("lite"):
         L.append(f"!! {LITE_CAVEAT}.")
     L.append(f"Target  Gaia DR3 {t['source_id']}  G={t['G']:.2f}  BP-RP={t['bp_rp']:.2f}  "
-             f"griz={' '.join(f'{t['mags'][b]:.2f}' for b in BANDS)}")
+             "griz=" + " ".join(f"{t['mags'][b]:.2f}" for b in BANDS))
     if s.basic:
         L.append(f"Setup   BASIC: {s.mode}, {s.size}; comparison stars ranked by brightness alone "
                  f"(photon noise; no exposure, sky or airmass model)")
@@ -1961,7 +1965,7 @@ def _tap_csv(query, timeout=NETWORK_TIMEOUT):
     import csv, io, urllib.parse, urllib.request
     url = EXOPLANET_TAP + "?" + urllib.parse.urlencode({"query": query, "format": "csv"})
     req = urllib.request.Request(url, headers={"User-Agent": "s4field"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with _urlopen(req, timeout) as r:
         text = r.read().decode("utf-8", "replace")
     return list(csv.DictReader(io.StringIO(text)))
 
@@ -2066,12 +2070,33 @@ class GaiaArchiveError(RuntimeError):
     pass
 
 
+def _urlopen(req, timeout):
+    """urllib's urlopen, plus one retry with certifi's certificates when this
+    Python has none of its own (the python.org installers for macOS ship without
+    them until 'Install Certificates.command' is run)."""
+    import ssl, urllib.error, urllib.request
+    try:
+        return urllib.request.urlopen(req, timeout=timeout)
+    except urllib.error.URLError as e:
+        if not isinstance(getattr(e, "reason", None), ssl.SSLCertVerificationError):
+            raise
+        try:
+            import certifi
+        except ImportError:
+            raise urllib.error.URLError(
+                "this Python cannot check HTTPS certificates: on macOS run 'Install "
+                "Certificates.command' in the Python folder of Applications, or "
+                "'pip install certifi'") from e
+        ctx = ssl.create_default_context(cafile=certifi.where())
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+
+
 def _http(url, data=None, timeout=GAIA_TIMEOUT):
     """GET (data None) or POST form data. Returns (final URL, text)."""
     import urllib.parse, urllib.request
     body = urllib.parse.urlencode(data).encode() if data is not None else None
     req = urllib.request.Request(url, data=body, headers={"User-Agent": f"s4field/{__version__}"})
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    with _urlopen(req, timeout) as r:
         return r.geturl(), r.read().decode("utf-8", "replace")
 
 
@@ -2790,8 +2815,36 @@ def make_handler(cache_dir="cones", source="auto"):
             return obtain_field(text, cache_dir, refresh=refresh, source=src, offline=offline,
                                 radius=radius, need=need)
 
+    import os
+    site = site_root()
+
     class Handler(BaseHTTPRequestHandler):
         server_version = f"s4field/{__version__}"
+
+        def _file(self, rel):
+            """A file of the SkyBound page itself (only inside its folder), so that
+            http://127.0.0.1:8417/ works in every browser, Safari included."""
+            if site is None:
+                return False
+            rel = urllib.parse.unquote(rel).lstrip("/") or "index.html"
+            path = os.path.realpath(os.path.join(site, rel))
+            if not path.startswith(site + os.sep) or not os.path.isfile(path):
+                return False
+            if any(part.startswith(".") for part in os.path.relpath(path, site).split(os.sep)):
+                return False
+            ext = os.path.splitext(path)[1].lower()
+            ctype = STATIC_TYPES.get(ext)
+            if ctype is None:
+                return False
+            with open(path, "rb") as f:
+                body = f.read()
+            self.send_response(200)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.send_header("Cache-Control", "no-cache")
+            self.end_headers()
+            self.wfile.write(body)
+            return True
 
         def _send(self, code, obj):
             body = json.dumps(obj).encode()
@@ -2847,6 +2900,8 @@ def make_handler(cache_dir="cones", source="auto"):
             u = urllib.parse.urlsplit(self.path)
             q = {k: v[-1] for k, v in urllib.parse.parse_qs(u.query).items()}
             try:
+                if not u.path.startswith("/api") and self._file(u.path):
+                    return None
                 if u.path in ("/api/status", "/api", "/"):
                     import glob, os
                     paths = glob.glob(os.path.join(cache_dir, "cone_*.csv"))
@@ -2902,12 +2957,29 @@ def make_handler(cache_dir="cones", source="auto"):
     return Handler
 
 
+STATIC_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+                ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8",
+                ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg",
+                ".ico": "image/x-icon", ".xml": "application/xml", ".csv": "text/csv; charset=utf-8",
+                ".md": "text/plain; charset=utf-8", ".txt": "text/plain; charset=utf-8"}
+
+
+def site_root():
+    """The SkyBound folder this script sits in (its index.html), or None."""
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+    return root if os.path.isfile(os.path.join(root, "index.html")) else None
+
+
 def serve(port=SERVE_PORT, cache_dir="cones", source="auto", ready=None):
     """Run the helper until Ctrl-C. Listens on 127.0.0.1 only."""
     from http.server import ThreadingHTTPServer
     httpd = ThreadingHTTPServer(("127.0.0.1", port), make_handler(cache_dir, source))
-    print(f"s4field {__version__} helper on http://127.0.0.1:{httpd.server_port}/api/status "
+    url = f"http://127.0.0.1:{httpd.server_port}/"
+    print(f"s4field {__version__} helper on {url}api/status "
           f"(cache: {cache_dir}/, catalogue: {source}). Ctrl-C to stop.", file=sys.stderr, flush=True)
+    if site_root():
+        print(f"SkyBound itself, with s4field connected, in any browser: {url}", file=sys.stderr, flush=True)
     if ready is not None:
         ready(httpd)
     try:

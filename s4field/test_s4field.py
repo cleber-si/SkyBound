@@ -724,6 +724,61 @@ class TestSources(unittest.TestCase):
             F.obtain_field("AU Mic", source="simbad")
 
 
+class TestPythonVersions(unittest.TestCase):
+    """s4field must run on Python 3.9+, so no syntax newer than that. The one
+    that slipped through (v0.13.1, broken on 3.9-3.11): an f-string reusing its
+    own quote inside a replacement field, legal only from 3.12 (PEP 701)."""
+
+    def test_no_pep701_fstrings(self):
+        import tokenize
+        if not hasattr(tokenize, "FSTRING_START"):
+            self.skipTest("this Python (< 3.12) would not even compile such a file")
+        for name in ("s4field.py", "test_s4field.py"):
+            with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), name), "rb") as f:
+                toks = list(tokenize.tokenize(f.readline))
+            stack = []                                    # quote of each open f-string
+            for t in toks:
+                if t.type == tokenize.FSTRING_START:
+                    q = t.string.lstrip("rRbBfFuU")[:3] if t.string.lstrip("rRbBfFuU")[:3] in ('"""', "'''") \
+                        else t.string.lstrip("rRbBfFuU")[:1]
+                    self.assertFalse(stack and q[0] in stack, f"{name}:{t.start[0]}: f-string reuses its quote {q} (needs 3.12)")
+                    stack.append(q[0])
+                elif t.type == tokenize.FSTRING_END:
+                    stack.pop()
+                elif t.type == tokenize.STRING and stack:
+                    body = t.string.lstrip("rRbBfFuU")
+                    self.assertNotIn(body[0], stack, f"{name}:{t.start[0]}: string inside an f-string reuses its quote (needs 3.12)")
+
+    def test_certificate_fallback(self):
+        # macOS python.org builds have no CA certificates until their installer
+        # script is run: retry once with certifi's, or say what to do
+        import ssl, sys as _sys, types, urllib.error
+        bad = urllib.error.URLError(ssl.SSLCertVerificationError("unable to get local issuer certificate"))
+        calls = []
+
+        def fake(req, timeout=None, context=None):
+            calls.append(context)
+            if context is None:
+                raise bad
+            return "ok"
+        fake_certifi = types.SimpleNamespace(where=lambda: ssl.get_default_verify_paths().cafile or "")
+        with mock.patch("urllib.request.urlopen", side_effect=fake), \
+                mock.patch("ssl.create_default_context", return_value="ctx"), \
+                mock.patch.dict(_sys.modules, {"certifi": fake_certifi}):
+            self.assertEqual(F._urlopen("req", 5), "ok")
+        self.assertEqual(calls, [None, "ctx"])
+        with mock.patch("urllib.request.urlopen", side_effect=bad), \
+                mock.patch.dict(_sys.modules, {"certifi": None}):
+            with self.assertRaises(urllib.error.URLError) as cm:
+                F._urlopen("req", 5)
+        self.assertIn("Install Certificates", str(cm.exception))
+
+    def test_old_python_gets_a_message(self):
+        with open(F.__file__) as f:
+            head = f.read(4000)
+        self.assertIn("sys.version_info < (3, 9)", head)
+
+
 class TestServe(unittest.TestCase):
     """The local helper, over real HTTP on 127.0.0.1."""
 
@@ -778,6 +833,31 @@ class TestServe(unittest.TestCase):
         self.assertEqual(code, 200)
         self.assertEqual(h["Access-Control-Allow-Origin"], "*")
         self.assertEqual(js["s4field"], F.__version__)
+
+    def raw(self, path):
+        import urllib.request, urllib.error
+        try:
+            with urllib.request.urlopen(self.base + path, timeout=30) as r:
+                return r.status, r.headers.get("Content-Type", ""), r.read()
+        except urllib.error.HTTPError as e:
+            with e:
+                return e.code, e.headers.get("Content-Type", ""), e.read()
+
+    def test_serves_skybound_page(self):
+        # http://127.0.0.1:8417/ is SkyBound itself, so any browser (Safari too)
+        # reaches the helper from the same address, with no permission prompt
+        if F.site_root() is None:
+            self.skipTest("s4field.py is not inside a SkyBound folder")
+        code, ctype, body = self.raw("/")
+        self.assertEqual(code, 200)
+        self.assertIn("text/html", ctype)
+        self.assertIn(b"SkyBound", body)
+        code, ctype, _ = self.raw("/js/field.js")
+        self.assertEqual((code, ctype.split(";")[0]), (200, "text/javascript"))
+        # nothing outside the folder, no hidden files, no unknown types
+        for bad in ("/../../etc/passwd", "/%2e%2e/%2e%2e/etc/passwd", "/.git/config", "/s4field/s4field.pyc"):
+            self.assertEqual(self.raw(bad)[0], 404, bad)
+        self.assertEqual(self.raw("/s4field/s4field.py")[0], 404)       # .py is not a page file
 
     def test_preflight(self):
         code, h, _ = self.get("/api/field", method="OPTIONS")

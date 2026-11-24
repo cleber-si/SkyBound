@@ -87,7 +87,7 @@ The comparison field needs *s4field*, a Python script in this repository, runnin
 python3 s4field/s4field.py --serve        # from this folder; Ctrl-C to stop
 ```
 
-The helper needs Python 3 with numpy, astropy and matplotlib. It listens only on `127.0.0.1:8417`. The first time a target is used, it downloads that target's Gaia DR3 cone: from the ESA Gaia Archive, or from GAVO's reduced copy when ESA is down. It keeps the cone in `cones/`, so the same target later works offline, for example at the telescope.
+The helper needs Python 3.9 or newer with numpy and astropy (matplotlib only for its command-line charts). It listens only on `127.0.0.1:8417`, and also serves SkyBound itself there: open http://127.0.0.1:8417/ and the page is already connected, in any browser. That is the way on Safari, which never lets an https:// website reach a program on the computer. The first time a target is used, it downloads that target's Gaia DR3 cone: from the ESA Gaia Archive, or from GAVO's reduced copy when ESA is down. It keeps the cone in `cones/`, so the same target later works offline, for example at the telescope.
 
 s4field also works on its own from the command line. Its rules, validation and options are documented in [`s4field/S4FIELD.md`](s4field/S4FIELD.md).
 
