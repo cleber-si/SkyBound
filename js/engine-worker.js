@@ -77,6 +77,17 @@ def _xhr(req, timeout):
 F._urlopen = _xhr
 api = F.Api("/cones", "auto", background="queue")
 
+# In a browser the ESA archive's refusal is its policy (it does not let web pages
+# read it: CORS), not a passing failure: after one refusal, GAVO is asked first
+# for 12 h -- across visits too (the page keeps the time) -- so no new target waits
+# for ESA to fail first. Should ESA start allowing web pages, the full catalogue
+# comes back within 12 h.
+F.ESA_RETRY_AFTER = 12 * 3600.0
+
+
+def esa_skip_until(t):
+    F._ESA_DOWN_UNTIL = max(F._ESA_DOWN_UNTIL, float(t or 0))
+
 
 def handle(method, path, query, body):
     q = json.loads(query) if query else {}
@@ -117,6 +128,7 @@ async function boot(m) {
     await syncfs(true);
   } catch (e) { post({ type: "log", text: `no browser storage for star lists (${e}); kept for this visit only` }); }
   py.runPython(GLUE);
+  if (m.esaDownUntil) py.globals.get("esa_skip_until")(m.esaDownUntil / 1);
   return JSON.parse(py.globals.get("status")());
 }
 

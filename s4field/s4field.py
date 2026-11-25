@@ -36,7 +36,7 @@ By Cleber Silva · UFC/MALTED
 
 from __future__ import annotations
 
-__version__ = "0.16.0"
+__version__ = "0.17.0"
 
 import argparse
 import copy
@@ -2282,10 +2282,14 @@ def resolve_target(text, tab=None, offline=False):
     if m and tab is None and not offline:                 # no CSV yet: ask the archive
         sid = int(m.group(1))
         try:
+            if esa_down():
+                raise ArchiveUnreachable("skipped")
             rows = _csv_rows(gaia_tap(f"SELECT ra, dec FROM gaiadr3.gaia_source "
                                       f"WHERE source_id = {sid}"))
             where = "Gaia Archive"
-        except GaiaArchiveError:                          # ESA down: GAVO's copy
+        except GaiaArchiveError as e:                     # ESA down: GAVO's copy
+            if isinstance(e, ArchiveUnreachable) and str(e) != "skipped":
+                _esa_unreachable()
             rows = _csv_rows(gavo_tap(f"SELECT ra, dec FROM gaia.dr3lite "
                                       f"WHERE source_id = {sid}"))
             where = "GAVO"
@@ -2343,6 +2347,37 @@ class GaiaArchiveError(RuntimeError):
     pass
 
 
+class ArchiveUnreachable(GaiaArchiveError):
+    """Nothing came back from the ESA archive (network down, refused, timed out,
+    or -- in a browser -- not allowed to a web page): as opposed to an answer
+    that reports an error."""
+
+
+# After the ESA archive could not be reached, "auto" goes straight to GAVO this
+# long, instead of waiting for ESA again on every new target (up to GAIA_TIMEOUT
+# when it hangs, as during an outage). SkyBound's in-browser engine sets a longer
+# time: there a refusal is the archive's policy (CORS), not a passing failure.
+ESA_RETRY_AFTER = 1800.0                    # s
+_ESA_DOWN_UNTIL = 0.0                       # time.time() until which ESA is skipped
+
+
+def esa_down():
+    """True while ESA is being skipped after it could not be reached."""
+    return _time.time() < _ESA_DOWN_UNTIL
+
+
+def _esa_unreachable():
+    global _ESA_DOWN_UNTIL
+    _ESA_DOWN_UNTIL = _time.time() + ESA_RETRY_AFTER
+
+
+def _esa_skipped_note():
+    left = max(0.0, _ESA_DOWN_UNTIL - _time.time())
+    return (f"ESA archive not asked: it could not be reached a moment ago "
+            f"(asked again in {left / 60:.0f} min)" if left < 5400 else
+            f"ESA archive not asked: it could not be reached (asked again in {left / 3600:.0f} h)")
+
+
 def _urlopen(req, timeout):
     """urllib's urlopen, plus one retry with certifi's certificates when this
     Python has none of its own (the python.org installers for macOS ship without
@@ -2386,27 +2421,32 @@ def gaia_tap(adql, base=GAIA_TAP, max_wait=GAIA_MAX_WAIT, poll=GAIA_POLL, sleep=
         url, body = _http(base + "/async", {"REQUEST": "doQuery", "LANG": "ADQL",
                                             "FORMAT": "csv", "PHASE": "RUN", "QUERY": adql})
     except Exception as e:
-        raise GaiaArchiveError(f"Gaia Archive unreachable ({base}): {e}") from e
+        raise ArchiveUnreachable(f"Gaia Archive unreachable ({base}): {e}") from e
     job = url.rstrip("/")
     if job.endswith("/async"):                       # no redirect followed: read the job id
         jid = _re.search(r"<uws:jobId>\s*([^<\s]+)\s*</uws:jobId>", body)
         if not jid:
             raise GaiaArchiveError("Gaia Archive: could not read the job id.")
         job = f"{base}/async/{jid.group(1)}"
+    def get(url):                                    # a lost connection mid-job: as unreachable
+        try:
+            return _http(url)[1]
+        except Exception as e:
+            raise ArchiveUnreachable(f"Gaia Archive stopped answering ({url}): {e}") from e
     waited = 0.0
     while True:
-        phase = _http(job + "/phase")[1].strip().upper()
+        phase = get(job + "/phase").strip().upper()
         if phase == "COMPLETED":
             break
         if phase in ("ERROR", "ABORTED"):
-            msg = _re.search(r"<uws:message>(.*?)</uws:message>", _http(job)[1], _re.S)
+            msg = _re.search(r"<uws:message>(.*?)</uws:message>", get(job), _re.S)
             raise GaiaArchiveError(f"Gaia Archive job {phase}: "
                                    + (msg.group(1).strip() if msg else "no message"))
         if waited >= max_wait:
             raise GaiaArchiveError(f"Gaia Archive job still {phase} after {max_wait:.0f} s ({job}).")
         sleep(poll)
         waited += poll
-    return _http(job + "/results/result")[1]
+    return get(job + "/results/result")
 
 
 GAVO_TAP = "https://dc.g-vo.org/tap"
@@ -2587,12 +2627,19 @@ def obtain_field(text, cache_dir="cones", offline=False, refresh=False, source="
             if small:
                 return small
             raise
-    errors = []
+    errors, skipped = [], ""
+    if source == "auto" and esa_down():          # ESA could not be reached a moment ago: GAVO now
+        hit = None if refresh else _read_cached(text, cache_dir, lite=True, need=need)
+        if hit:
+            return hit
+        order, skipped = [True], _esa_skipped_note()
     for lite in order:
         try:
             tab, rz2 = _download(text, rz, cache_dir, lite, radius)
         except GaiaArchiveError as e:
             errors.append(str(e))
+            if lite is False and isinstance(e, ArchiveUnreachable):
+                _esa_unreachable()
             if lite is False and source == "auto":
                 hit = None if refresh else _read_cached(text, cache_dir, lite=True, need=need)
                 if hit:
@@ -2600,7 +2647,9 @@ def obtain_field(text, cache_dir="cones", offline=False, refresh=False, source="
                     return hit
                 print(f"{e}\nTrying GAVO's reduced Gaia DR3 instead.", file=sys.stderr)
             continue
-        if errors:
+        if skipped:
+            rz2.catalogue += f" -- {skipped}"
+        elif errors:
             rz2.catalogue += f" -- ESA archive failed: {errors[0]}"
         return tab, rz2
     small = None if refresh else _smaller_cached(text, cache_dir, source, need)
@@ -3045,6 +3094,8 @@ class Api:
         waits for ESA (it can take minutes, or fail). The next request after it
         arrives uses it."""
         key = text.strip().lower()
+        if esa_down():                               # it could not be reached a moment ago
+            return
         with self.state:
             if key in self.upgrading or _time.time() - self.last_try.get(key, 0) < UPGRADE_EVERY:
                 return
@@ -3056,7 +3107,11 @@ class Api:
                 rz = _read_cached(text, self.cache_dir, True)[1]
                 src = rz.source[7:-1] if rz.source.startswith("cache (") else rz.source
                 rz = Resolution(text, rz.ra, rz.dec, src, rz.note)
-                _download(text, rz, self.cache_dir, False, radius)
+                try:
+                    _download(text, rz, self.cache_dir, False, radius)
+                except ArchiveUnreachable:
+                    _esa_unreachable()
+                    raise
                 print(f"[s4field] full Gaia cone for '{text}' cached in the background: "
                       f"the next request uses it", file=sys.stderr, flush=True)
             except Exception as e:                   # ESA down or slow: keep the reduced cone
@@ -3085,13 +3140,16 @@ class Api:
                 rz = Resolution(text, rz.ra, rz.dec,
                                 rz.source[7:-1] if rz.source.startswith("cache (") else rz.source, rz.note)
                 errors = []
-                for lite in ([False] if src == "esa" else [True] if src == "gavo" else [False, True]):
+                order = [False] if src == "esa" else [True] if src == "gavo" or esa_down() else [False, True]
+                for lite in order:
                     try:
                         _download(text, rz, self.cache_dir, lite, radius)
                         print(f"[s4field] larger Gaia cone ({radius:g} deg) for '{text}' cached in the "
                               f"background: the next request uses it", file=sys.stderr, flush=True)
                         return
                     except GaiaArchiveError as e:
+                        if lite is False and isinstance(e, ArchiveUnreachable):
+                            _esa_unreachable()
                         errors.append(str(e).strip().splitlines()[0][:120] if str(e).strip() else "failed")
                 raise GaiaArchiveError("; ".join(errors))
             except Exception as e:
@@ -3129,7 +3187,7 @@ class Api:
         cached = sorted(os.path.basename(p)[5:-4] for p in paths)
         updated = max((os.path.getmtime(p) for p in paths), default=0.0)
         return {"s4field": __version__, "cache_dir": os.path.abspath(self.cache_dir), "source": self.source,
-                "cached": cached, "updated": updated}
+                "cached": cached, "updated": updated, "esa_down_until": _ESA_DOWN_UNTIL if esa_down() else 0.0}
 
     def post(self, path, raw):
         """POST path with the raw body (bytes): /api/fov only."""

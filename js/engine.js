@@ -41,6 +41,17 @@ const S4Engine = (() => {
   // the ?v=<version> this file was loaded with (index.html), passed on to the worker
   const VER = (() => { try { const q = new URL(document.currentScript.src).search; return q || ""; } catch (e) { return ""; } })();
 
+  // when the ESA archive last refused this browser: kept across visits, so a new visit
+  // goes straight to GAVO too, until s4field asks ESA again (see ESA_SKIP in the worker)
+  const ESA_KEY = "skybound.engine.esaDownUntil";
+  const esaDownUntil = () => { try { return +localStorage.getItem(ESA_KEY) || 0; } catch (e) { return 0; } };
+  function keepEsa(st) {
+    try {
+      if (st && st.esa_down_until) localStorage.setItem(ESA_KEY, String(st.esa_down_until));
+      else if (st) localStorage.removeItem(ESA_KEY);
+    } catch (e) { /* this visit only */ }
+  }
+
   function start() {
     if (boot) return boot;
     if (!supported()) {
@@ -60,6 +71,7 @@ const S4Engine = (() => {
           emit({ type: "progress", progress });
         } else if (m.type === "ready") {
           status = m.status;
+          keepEsa(status);
           setState("ready");
           resolve(status);
         } else if (m.type === "failed") {
@@ -74,9 +86,11 @@ const S4Engine = (() => {
         } else if (m.type === "status") {
           const n = (status && status.cached || []).length;
           status = m.status;
+          keepEsa(status);
           if (m.status.cached.length !== n) emit({ type: "status", status });
         } else if (m.type === "updated") {
           status = m.status;
+          keepEsa(status);
           emit({ type: "updated", status });
         } else if (m.type === "log") {
           console.info("[s4field engine]", m.text);
@@ -89,7 +103,7 @@ const S4Engine = (() => {
         for (const [, w] of waiting) w.reject(new Error(`ENGINE: ${error}`));
         waiting.clear();
       };
-      worker.postMessage({ type: "boot", indexURL: indexURL(), site: site() });
+      worker.postMessage({ type: "boot", indexURL: indexURL(), site: site(), esaDownUntil: esaDownUntil() });
     });
     boot.catch(() => { boot = null; if (worker) { worker.terminate(); worker = null; } });
     return boot;

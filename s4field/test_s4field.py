@@ -360,8 +360,18 @@ class TestGaiaArchive(unittest.TestCase):
 
     def test_unreachable(self):
         with mock.patch.object(F, "_http", side_effect=OSError("403 Forbidden")):
-            with self.assertRaises(F.GaiaArchiveError):
+            with self.assertRaises(F.ArchiveUnreachable):
                 F.gaia_tap("SELECT 1")
+
+    def test_lost_mid_job_is_unreachable(self):
+        fake = FakeArchive(steps=3)
+        def flaky(url, data=None, *a):
+            if url.endswith("/phase"):
+                raise OSError("connection reset")
+            return fake(url, data)
+        with mock.patch.object(F, "_http", side_effect=flaky):
+            with self.assertRaises(F.ArchiveUnreachable):
+                F.gaia_tap("SELECT 1", sleep=lambda s: None)
 
     def test_gaia_id_without_csv_asks_archive(self):
         with mock.patch.object(F, "gaia_tap", return_value="ra,dec\n311.2897,-31.3409\n") as g:
@@ -785,6 +795,44 @@ class TestSources(unittest.TestCase):
                 tab, rz = F.obtain_field("AU Mic", d, offline=True, source="gavo")
                 self.assertTrue(tab.meta["lite"])                   # unless asked
 
+    def test_unreachable_esa_is_skipped_for_a_while(self):
+        import tempfile
+        F._ESA_DOWN_UNTIL = 0.0
+        self.addCleanup(setattr, F, "_ESA_DOWN_UNTIL", 0.0)
+        mic2 = F.Resolution("Elsewhere", 150.0, -30.0, "coordinates")
+        with tempfile.TemporaryDirectory() as d:
+            with mock.patch.object(F, "resolve_target", side_effect=[self.RZ, mic2]), \
+                    mock.patch.object(F, "gaia_tap", side_effect=F.ArchiveUnreachable("no answer")) as ga, \
+                    mock.patch.object(F, "gavo_tap", return_value=LITE_ROWS) as gv:
+                tab, rz = F.obtain_field("AU Mic", d)
+                self.assertIn("ESA archive failed", rz.catalogue)
+                self.assertTrue(F.esa_down())
+                tab, rz = F.obtain_field("Elsewhere", d)            # a new target: GAVO at once
+                self.assertEqual(ga.call_count, 1)
+                self.assertEqual(gv.call_count, 2)
+                self.assertIn("ESA archive not asked", rz.catalogue)
+                api = F.Api(d, "auto", background="queue")
+                api.upgrade_later("AU Mic")                         # no futile background try
+                self.assertEqual(api.queue, [])
+                self.assertGreater(api.status()["esa_down_until"], 0)
+            F._ESA_DOWN_UNTIL = 0.0                                 # the time is up: ESA again
+            with mock.patch.object(F, "resolve_target", return_value=self.RZ), \
+                    mock.patch.object(F, "gaia_tap", return_value=self.FULL):
+                tab, rz = F.obtain_field("AU Mic", d)
+                self.assertFalse(tab.meta["lite"])
+                self.assertEqual(F.Api(d).status()["esa_down_until"], 0.0)
+
+    def test_an_esa_error_answer_does_not_skip_it(self):
+        import tempfile
+        F._ESA_DOWN_UNTIL = 0.0
+        self.addCleanup(setattr, F, "_ESA_DOWN_UNTIL", 0.0)
+        with tempfile.TemporaryDirectory() as d:
+            with mock.patch.object(F, "resolve_target", return_value=self.RZ), \
+                    mock.patch.object(F, "gaia_tap", side_effect=F.GaiaArchiveError("job ERROR")), \
+                    mock.patch.object(F, "gavo_tap", return_value=LITE_ROWS):
+                F.obtain_field("AU Mic", d)
+        self.assertFalse(F.esa_down())
+
     def test_esa_only_does_not_fall_back(self):
         import tempfile
         with tempfile.TemporaryDirectory() as d:
@@ -968,7 +1016,7 @@ class TestServe(unittest.TestCase):
         self.assertIn(b"SkyBound", body)
         code, ctype, _ = self.raw("/js/field.js")
         self.assertEqual((code, ctype.split(";")[0]), (200, "text/javascript"))
-        self.assertEqual(self.raw("/js/field.js?v=1.0.2")[0], 200)          # the page asks with ?v=
+        self.assertEqual(self.raw("/js/field.js?v=1.1.0")[0], 200)          # the page asks with ?v=
         # nothing outside the folder, no hidden files, no unknown types
         for bad in ("/../../etc/passwd", "/%2e%2e/%2e%2e/etc/passwd", "/.git/config", "/s4field/s4field.pyc"):
             self.assertEqual(self.raw(bad)[0], 404, bad)
