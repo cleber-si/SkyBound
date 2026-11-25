@@ -337,7 +337,7 @@
     <div class="sub">Where the mount can go — <em>anytime, anywhere</em>.</div>
   </div>
   <div class="hdr-right">
-    <div class="ver">v1.0.1</div>
+    <div class="ver">v1.0.2</div>
     <div class="sig">By <strong>Cleber Silva</strong> · UFC/MALTED · <a href="https://github.com/cleber-si/skybound" target="_blank" rel="noopener">source</a></div>
   </div>
 </header>
@@ -349,7 +349,7 @@
       <div class="top-col">
         <h2>Target</h2>
         <label>Name
-          <span class="hint">a star, exoplanet host, TOI or Gaia DR3 ID (s4field helper, else online, else the reference tables) · or type RA/Dec below</span>
+          <span class="hint">a star, exoplanet host, TOI or Gaia DR3 ID (the reference tables first, then online; the s4field helper when it is in use) · or type RA/Dec below</span>
           <span class="name-row">
             <input type="text" id="tName" placeholder="e.g. AU Mic, HD 10038, TOI-2631" autocomplete="off">
             <button class="btn-primary" id="tFind" type="button">Find</button>
@@ -952,6 +952,9 @@ function tgtCommit(name){
   EDITED.clear();
   if(!isFinite(ra)||!isFinite(dec)) return false;
   ACTIVE=tgtAdd(ra,dec,name||null,$("ra").value.trim(),$("dec").value.trim()); return true; }
+const nameKey=s=>String(s).toLowerCase().normalize("NFKD").replace(/[^a-z0-9]/g,"");   // as js/lookup.js
+function tgtByName(name){               // a named target of the list, by name (case, spaces, dashes ignored)
+  const k=nameKey(name); return k?TARGETS.findIndex(t=>t.named&&nameKey(t.name)===k):-1; }
 function tgtUse(i){                    // select target i: fill RA/Dec and the name box, redraw
   const t=TARGETS[i]; if(!t) return;
   ACTIVE=i; EDITED.clear(); $("ra").value=t.raTxt; $("dec").value=t.decTxt;
@@ -1467,10 +1470,10 @@ tgtRestore();                          // first: a redraw stores the list, so it
 try{ const v=JSON.parse(localStorage.getItem(LIM_STORE)||"null"); if(v&&v.text) setCSV(v.text,v.label||"your limits",true); }catch(e){ /* none kept */ }
 render();
 </script>
-<script src="js/lookup.js?v=1.0.1"></script>
-<script src="js/fov.js?v=1.0.1"></script>
-<script src="js/hips.js?v=1.0.1"></script>
-<script src="js/engine.js?v=1.0.1"></script>
-<script src="js/field.js?v=1.0.1"></script>
+<script src="js/lookup.js?v=1.0.2"></script>
+<script src="js/fov.js?v=1.0.2"></script>
+<script src="js/hips.js?v=1.0.2"></script>
+<script src="js/engine.js?v=1.0.2"></script>
+<script src="js/field.js?v=1.0.2"></script>
 </body>
 </html>

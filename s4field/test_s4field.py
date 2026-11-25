@@ -968,7 +968,7 @@ class TestServe(unittest.TestCase):
         self.assertIn(b"SkyBound", body)
         code, ctype, _ = self.raw("/js/field.js")
         self.assertEqual((code, ctype.split(";")[0]), (200, "text/javascript"))
-        self.assertEqual(self.raw("/js/field.js?v=1.0.1")[0], 200)          # the page asks with ?v=
+        self.assertEqual(self.raw("/js/field.js?v=1.0.2")[0], 200)          # the page asks with ?v=
         # nothing outside the folder, no hidden files, no unknown types
         for bad in ("/../../etc/passwd", "/%2e%2e/%2e%2e/etc/passwd", "/.git/config", "/s4field/s4field.pyc"):
             self.assertEqual(self.raw(bad)[0], 404, bad)

@@ -1,16 +1,21 @@
 "use strict";
 /* SkyBound · target name lookup without the s4field helper.
 
-   Tried in this order (field.js asks the helper first when it is running):
-     1. online, straight from the browser
+   Tried in this order, fastest first (field.js first looks in the target list, and
+   asks the helper when it is the one in use):
+     1. remembered: a name looked up online before, in this browser (no network);
+     2. offline, the reference tables: js/targets.js, built from the
+        toi_transits.py reference_tables/ folder by tools/build_targets.py and
+        loaded once, when a name is first looked up (≈0.4 MB, a fraction of a second);
+     3. online, straight from the browser, for names the tables don't have
         - a Gaia DR3 source ID → GAVO's gaia.dr3lite (the one Gaia service a web
           page may read: tools/cors_test2.html), moved from epoch 2016.0 to 2000.0;
         - any other name → CDS Sesame (SIMBAD, then VizieR), Strasbourg, then the
-          CfA mirror;
-     2. offline, the reference tables: js/targets.js, built from the
-        toi_transits.py reference_tables/ folder by tools/build_targets.py and
-        loaded only when needed.
-   A name the online services don't know (many TOIs) also falls through to 2.
+          CfA mirror. When Sesame is down this costs up to 2 × 8 s, which is why
+          it comes last.
+   The tables' positions are their catalogues' (Gaia's epoch for the NASA tables):
+   a few arcseconds from SIMBAD's epoch-2000 position for fast-moving stars, which
+   changes nothing SkyBound computes (s4field matches the Gaia star itself).
 
    Lookup.resolve(name) → { ra, dec (J2000, degrees), source, offline, note }
    or throws an Error whose message is ready to show.
@@ -134,21 +139,42 @@ const Lookup = (() => {
     return null;
   }
 
+  /* ---- 0. names looked up online before, kept in this browser ------------------ */
+  // Only online answers (Sesame, GAVO, the helper) are kept: the tables answer as fast.
+  const MEMO = "skybound.names.v1", MEMO_MAX = 500;
+  function memo() { try { return JSON.parse(localStorage.getItem(MEMO) || "{}") || {}; } catch (e) { return {}; } }
+  function recall(name) {
+    const m = memo(), v = m[key(name)];
+    return v ? { ra: v[0], dec: v[1], source: v[2], note: v[3] || "", remembered: v[4] || "" } : null;
+  }
+  function remember(name, hit) {
+    if (!hit || !isFinite(hit.ra) || !isFinite(hit.dec) || hit.offline) return;
+    const m = memo(), k = key(name);
+    if (!k) return;
+    delete m[k];                         // re-insert: the newest last
+    m[k] = [hit.ra, hit.dec, hit.source || "", hit.note || "", new Date().toLocaleDateString("en-CA")];   // local date, YYYY-MM-DD
+    const ks = Object.keys(m);
+    for (const old of ks.slice(0, Math.max(0, ks.length - MEMO_MAX))) delete m[old];
+    try { localStorage.setItem(MEMO, JSON.stringify(m)); } catch (e) { /* this visit only */ }
+  }
+  function forget(name) {
+    const m = memo(); delete m[key(name)];
+    try { localStorage.setItem(MEMO, JSON.stringify(m)); } catch (e) { /* nothing kept */ }
+  }
+
   /* ---- the chain -------------------------------------------------------------- */
   async function resolve(name, opts = {}) {
     const online = opts.online !== false;
+    if (opts.memo !== false) { const r = recall(name); if (r) return r; }
+    const hit = await fromTables(name);
+    if (hit && !hit.missing) return hit;
     let netWhy = null;                   // set when no online service answered at all
     if (online) {
       try {
         const id = gaiaId(name);
-        const hit = id ? await fromGaia(id) : await fromSesame(name);
-        if (hit) return hit;
+        const got = id ? await fromGaia(id) : await fromSesame(name);
+        if (got) { remember(name, got); return got; }
       } catch (e) { if (e instanceof Offline) netWhy = e.message; else throw e; }
-    }
-    const hit = await fromTables(name);
-    if (hit && !hit.missing) {
-      if (netWhy) hit.note = [hit.note, "Sesame (CDS) did not answer"].filter(Boolean).join(" · ");
-      return hit;
     }
     const tables = hit && hit.missing
       ? "no reference index yet (<code>python3 tools/build_targets.py &lt;reference_tables folder&gt;</code>)"
@@ -166,5 +192,5 @@ const Lookup = (() => {
     catch (e) { throw new Error(e instanceof Offline ? `no answer (${e.message})` : e.message); }
   }
 
-  return { resolve, online, fromTables, loadIndex, variants, key, parseSesame };
+  return { resolve, online, fromTables, loadIndex, variants, key, parseSesame, recall, remember, forget };
 })();

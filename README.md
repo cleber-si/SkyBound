@@ -17,7 +17,7 @@ Open `index.html` in a browser, either from disk or from the GitHub Pages site. 
 
 The page opens without a target: the plot shows the night and the Moon until you give one.
 
-1. **Target.** Type a name (a star, exoplanet host, TOI or Gaia DR3 ID) and press *Find*, or type RA/Dec. You can also paste both coordinates into the name box. Names are looked up by the s4field helper when it runs, otherwise online from the browser, otherwise in the reference tables (see below).
+1. **Target.** Type a name (a star, exoplanet host, TOI or Gaia DR3 ID) and press *Find*, or type RA/Dec. You can also paste both coordinates into the name box. A name already in the target list, or looked up before in this browser, needs no lookup. Otherwise it is looked up by the s4field helper when it is in use; in the browser, the reference tables come first and the online services (Sesame) last (see below).
    - **Several targets.** Every target you give joins the *Targets* list under the coordinates: a looked-up name keeps its name, coordinates typed by hand become *Target 1*, *Target 2*, … (once both RA and Dec are typed, or on Enter / *Compute*; until then *+ add these coordinates to the list*). Click a target to select it, × to remove it. The list is kept in this browser, with the selected target, so it is there on the next visit; *clear all* empties it. You can also select a target where you are working: by its name in the airmass plot's legend, or from the target list in the comparison field (above the controls, and in the summary bar once a field is shown).
    - **Target lists in files.** *save list* downloads the list as `skybound_targets.csv` (`name,ra,dec`, J2000, RA in hours). *Load a target list…* adds the targets of such a file: comma, tab or semicolon separated, with or without a header (`name`/`target`/`object`, `ra`/`ra_deg`, `dec`/`dec_deg`). RA is read in hours, or in degrees when the header says so or the value is over 24. A row with only a name is looked up like the name box; targets already in the list are not repeated. A file's own coordinates are used for the comparison field, not a lookup of its names.
    - The **selected** target is the one in the RA/Dec boxes: the status, timers, pointing bar and comparison field follow it. The airmass plot shows every target in its own colour, the selected one thicker.
@@ -109,16 +109,19 @@ SkyBound is a static page, so GitHub Pages can serve it as it is: `index.html` a
 
 ### Name lookup without the helper
 
-`js/lookup.js` tries, in order:
+The target list comes first: a name already in it is used as it is, with no lookup. Then `js/lookup.js` tries, fastest first:
 
-1. **Online, from the browser.** A `Gaia DR3 …` ID goes to GAVO's `gaia.dr3lite` (the one Gaia service a page may read; the position is moved to epoch 2000 with its proper motion). Any other name goes to CDS Sesame (SIMBAD, then VizieR), in Strasbourg, then at the CfA mirror.
-2. **The reference tables**, offline: `js/targets.js`, an index of the catalogue CSVs that `toi_transits.py` keeps in its `reference_tables/` folder. It is also used when the online services don't know the name (many TOIs). Build or refresh it with
+1. **Names looked up online before**, kept in this browser (up to 500): no network at all. The message says "remembered from <date>"; pressing *Find* again looks the name up anew. The helper's answers are kept too.
+2. **The reference tables**, offline: `js/targets.js`, an index of the catalogue CSVs that `toi_transits.py` keeps in its `reference_tables/` folder. It is about 0.4 MB, fetched once when the name box is first used, and answers in a fraction of a second. Its positions are the catalogues' own (Gaia's epoch for the NASA tables): a few arcseconds from SIMBAD's epoch-2000 position for fast-moving stars such as AU Mic, which changes nothing SkyBound computes, since s4field matches the Gaia star itself. Build or refresh it with
 
    ```bash
    python3 tools/build_targets.py /path/to/reference_tables
    ```
 
    It reads the ExoFOP and NASA TOI lists, the NASA Exoplanet Archive (PS or PSCompPars) and exoplanet.eu; when a name is in several, the first of those wins. Planets fold into their host star (`AU Mic b`, `TOI-2631.01` find the star). Commit `js/targets.js` so that the GitHub Pages copy has it too.
+3. **Online, from the browser**, for names the tables don't have. A `Gaia DR3 …` ID goes to GAVO's `gaia.dr3lite` (the one Gaia service a page may read; the position is moved to epoch 2000 with its proper motion). Any other name goes to CDS Sesame (SIMBAD, then VizieR), in Strasbourg, then at the CfA mirror. This comes last because a Sesame that doesn't answer costs up to 8 s per mirror.
+
+With the helper in use (not the in-browser engine), a name not in the list or remembered goes to the helper first, which asks Sesame and the NASA Exoplanet Archive itself; the tables are the fallback.
 
 The message under the name box says which source answered. `tools/lookup_test.html` tries every layer separately in your browser.
 

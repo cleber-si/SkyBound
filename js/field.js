@@ -350,12 +350,32 @@ const Field = (() => {
       save(); render();
       return;
     }
+    // fastest first: a target already in the list, then a name looked up before (no network);
+    // Find pressed again right after a remembered answer looks the name up anew
+    const k = typeof Lookup !== "undefined" ? Lookup.key(text) : "";
+    const again = k && st.recalled === k;
+    st.recalled = null;
+    const i = !again && typeof tgtByName === "function" ? tgtByName(text) : -1;
+    if (i >= 0) {
+      const t = TARGETS[i];
+      useText(t.name, t.raTxt, t.decTxt, `already in the target list <span class="hint">· no lookup needed</span>`);
+      return;
+    }
+    if (again) Lookup.forget(text);
+    const r = k && !again ? Lookup.recall(text) : null;
+    if (r) {
+      st.recalled = k;
+      useName(text, r.ra, r.dec, `${lookupLabel(r)} <span class="hint">· remembered from ${esc(r.remembered || "an earlier lookup")};
+        press Find again to look it up anew</span>`);
+      return;
+    }
     el("tFind").disabled = true;
     nameMsg("", `looking up <b>${esc(text)}</b>…`);
     try {
       // with s4field in this browser, names are looked up by the page itself (it may still be loading)
       if (useEngine()) throw new Error("HELPER_DOWN");
       const js = await api("/api/resolve?target=" + encodeURIComponent(text), 90000);
+      if (typeof Lookup !== "undefined") Lookup.remember(text, js);
       useName(text, js.ra, js.dec, `${esc(js.source)}${js.note ? " · " + esc(js.note) : ""}`);
       if (el("fieldBody").style.display !== "none") compute(false);   // straight to its field
     } catch (e) {
@@ -371,9 +391,10 @@ const Field = (() => {
     }
   }
 
-  function useName(text, ra, dec, label) {
-    el("ra").value = sexa(ra, true);
-    el("dec").value = sexa(dec, false);
+  const useName = (text, ra, dec, label) => useText(text, sexa(ra, true), sexa(dec, false), label);
+  function useText(text, raTxt, decTxt, label) {
+    el("ra").value = raTxt;
+    el("dec").value = decTxt;
     if (typeof tgtCommit === "function") tgtCommit(text);      // into the target list, under its name
     st.name = text;
     st.nameFor = { ra: el("ra").value, dec: el("dec").value };
@@ -384,9 +405,14 @@ const Field = (() => {
   // a name's J2000 position (degrees), for the target-list loader: the helper when it is
   // in use, else the page's own lookups (online, then the reference tables); null if unknown
   async function resolve(text) {
+    const r = typeof Lookup !== "undefined" ? Lookup.recall(text) : null;
+    if (r) return { ra: r.ra, dec: r.dec };
     if (!useEngine() && (st.helperPref ?? helperOn())) {
-      try { const js = await api("/api/resolve?target=" + encodeURIComponent(text), 90000); return { ra: js.ra, dec: js.dec }; }
-      catch (e) { /* not running, or it doesn't know the name: the page's own lookups */ }
+      try {
+        const js = await api("/api/resolve?target=" + encodeURIComponent(text), 90000);
+        if (typeof Lookup !== "undefined") Lookup.remember(text, js);
+        return { ra: js.ra, dec: js.dec };
+      } catch (e) { /* not running, or it doesn't know the name: the page's own lookups */ }
     }
     if (typeof Lookup === "undefined") return null;
     try { const h = await Lookup.resolve(text); return { ra: h.ra, dec: h.dec }; }
@@ -397,7 +423,7 @@ const Field = (() => {
   }
   const lookupLabel = (h) => `${esc(h.source)}${h.note ? " · " + esc(h.note) : ""}`;
 
-  // no helper: js/lookup.js asks the online resolvers from the browser, then the reference tables
+  // no helper: js/lookup.js looks in the reference tables, then asks the online resolvers
   async function findWithoutHelper(text) {
     if (typeof Lookup === "undefined") {
       nameMsg("bad", `Name lookup needs the s4field helper: run ${START}, or type RA/Dec below.`);
@@ -2360,6 +2386,10 @@ ${res.join("\n")}
   function init() {
     el("tFind").addEventListener("click", find);
     el("tName").addEventListener("keydown", (e) => { if (e.key === "Enter") find(); });
+    // the reference tables come first without the helper: fetch them while the name is typed
+    el("tName").addEventListener("focus", () => {
+      if (typeof Lookup !== "undefined" && (useEngine() || !(st.helperPref ?? helperOn()))) Lookup.loadIndex();
+    });
     for (const id of ["ra", "dec"]) el(id).addEventListener("change", coordsEdited);
     el("scope").addEventListener("change", save);
     el("fGo").addEventListener("click", () => {
