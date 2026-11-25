@@ -32,7 +32,8 @@ The page opens without a target: the plot shows the night and the Moon until you
    - The summary bar gives the TCSPD offset, the field centre, the comparisons, η and the **Guider Setup angle** (it follows the guider box when you drag it). Coordinates are written as SIMBAD does: `20 45 09.874 -31 20 32.82`.
    - The field is computed by itself as soon as there is a target (and again when the target, instrument or settings change); *Find field* asks again.
    - **An empty position** (no Gaia star there, such as a pointing test) still gets its field, centred on the position, with a warning: guider and star list, but no comparison stars or η.
-   - **The sky view is interactive:** drag to pan, scroll or +/− to zoom, double-click to recentre. Drag the gold field to try another pointing; it is scored when you let go, and turns red if the target falls off it. Drag the blue guider box around its circle to pick the guide star; the Guider Setup angle and the star in the box update as you go. *Recommended* puts both back. *Centre* puts the field centre on the target (offset 0, 0) and scores that pointing.
+   - **The sky view is interactive:** drag to pan, scroll or +/− to zoom, double-click to recentre. Drag the gold field to try another pointing; it is scored when you let go, and turns red if the target falls off it. Drag the blue guider box around its circle to pick the guide star; the Guider Setup angle and the star in the box update as you go. *Recommended* puts both back. *Centre* puts the field centre on the target (offset 0, 0) and scores that pointing. *Best guide star* (shown once the guider has been moved by hand) puts the guider back on the best guide star for the pointing on screen, without moving the field.
+   - **Readable on any image.** Every line, circle and label of the overlay has a thin dark outline. When the image under the view is bright, as in crowded fields such as the LMC, SkyBound measures its brightness from the pixels and dims it by that much (*Dimmed (auto)*), so the overlay keeps its colours and the legend stays true. Click the button to turn the dimming off or on.
 
 The page remembers the telescope, the instrument, the loaded FoV files, the comparison-field settings, the target list and the pointing limits in this browser.
 
@@ -48,7 +49,7 @@ The field card works for any instrument. Choose it under *Instrument*. The choic
   Loaded and new FoVs stay in this browser until you remove them.
 
   - **Comparison stars** (helper 0.13): s4field ranks them by brightness in the **Band** you choose beside *Field PA*. The bands are V (default), Gaia G, or Gaia's synthetic g, r, i, z. It uses the basic-mode rules: the ΔV window, *at most* N stars, Gaia quality, isolation, and the edge margin on the instrument's own detector(s), so chip gaps are avoided too. There is no exposure model. The summary gives the offset from the target, the comparisons and η in that band.
-    - Drag the field to score another pointing; *Recommended* goes back, *Centre* puts the target in the middle.
+    - Drag the field to score another pointing; *Recommended* goes back, *Centre* puts the target in the middle. After the guide probe is turned by hand, *Best guide star* turns it back to the best star.
     - *Field PA* turns the FoV east of north, 0° by default (its y axis to the north), and the field is scored again.
   - ***Regions…*** lists the regions with the role SkyBound gave each:
     - **science**: the detector(s), where a star is "in the field";

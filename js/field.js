@@ -1023,7 +1023,7 @@ const Field = (() => {
     if (newTarget || !st.v) preset(st.preset, true);
     if (newTarget) {                     // new sky: drop the old images
       st.imgFor = tkey(js);
-      st.sky = null; st.imgOK = null;
+      st.sky = null; st.imgOK = null; st.lum = null;
       el("fLayImg").innerHTML = "";
     }
     redraw();
@@ -1172,6 +1172,11 @@ const Field = (() => {
           img.addEventListener("load", () => {
             if (req.done || st.survey !== survey) { img.remove(); return; }
             shown(img, u.W, "DSS2 red (STScI)", true);
+            // its brightness: the same picture again, asked for so that the page may read it
+            const probe = new Image();
+            probe.crossOrigin = "anonymous";
+            probe.onload = () => { if (st.sky && st.sky.x === req.x) { st.lum = measure(probe, req.x - u.W / 2, req.y - u.W / 2, u.W); look(); } };
+            probe.src = u.url;
           });
           img.addEventListener("error", () => { img.remove(); failed("STScI"); });
           img.setAttribute("href", u.url);
@@ -1189,6 +1194,7 @@ const Field = (() => {
         note(`${name} (CDS HiPS) · N up, E left · loading…`);
         const h = Hips.draw(survey, P, sc, toRaDec, toPx, (canvas, done) => {
           if (st.sky !== req && !(st.sky && st.sky.x === req.x && st.sky.W < req.W)) { h.cancel(); return; }
+          if (done || !st.lum || st.lum.x0 !== x0) { st.lum = measure(canvas, x0, y0, req.W); setTimeout(look, 0); }
           canvas.toBlob((blob) => {
             if (!blob) return;
             const u2 = URL.createObjectURL(blob);
@@ -1446,6 +1452,10 @@ const Field = (() => {
   }
 
   function redraw() {
+    redrawNow();
+    look();
+  }
+  function redrawNow() {
     const js = st.js;
     if (!js || !st.v) return;
     if (js.mosaic) return redrawMosaic();
@@ -1648,6 +1658,95 @@ const Field = (() => {
     waitingNote();
     redraw();
     compute(false);
+  }
+
+  /* ---- readability on any sky image ------------------------------------------
+     Every overlay gets a dark outline (the fHalo filter, about 1.3 screen pixels
+     wide, whatever the zoom), and when the image under the view is bright -- a
+     crowded field such as the LMC -- a dark veil dims it, by how bright it is
+     (measured from its pixels), so lines, circles and labels keep their colours
+     (the legend stays true) and stand out. "Dim image" overrides it. */
+  const LUM_N = 96;                      // the measured image: LUM_N x LUM_N cells
+  const DIM_FROM = 0.3, DIM_TO = 0.22, DIM_MAX = 0.6;
+  // the luminance of an image covering x0..x0+W, y0..y0+W (sky frame, arcsec); null if unreadable
+  function measure(src, x0, y0, W) {
+    try {
+      const cv = document.createElement("canvas");
+      cv.width = cv.height = LUM_N;
+      const ctx = cv.getContext("2d", { willReadFrequently: true });
+      ctx.drawImage(src, 0, 0, LUM_N, LUM_N);
+      const d = ctx.getImageData(0, 0, LUM_N, LUM_N).data, L = new Float32Array(LUM_N * LUM_N);
+      const lin = (c) => c / 255;
+      for (let i = 0; i < L.length; i++) {
+        const a = d[4 * i + 3] / 255;
+        L[i] = a < 0.5 ? -1 : 0.2126 * lin(d[4 * i]) + 0.7152 * lin(d[4 * i + 1]) + 0.0722 * lin(d[4 * i + 2]);
+      }
+      return { x0, y0, W, L };
+    } catch (e) { return null; }          // pixels not readable (CORS): the outline still helps
+  }
+  // the mean luminance of the image in the view, or null (not measured, mostly empty)
+  function viewLum() {
+    const m = st.lum, v = st.v;
+    if (!m || !v || !st.imgOK) return null;
+    const c = (t) => Math.floor(t * LUM_N);
+    const i0 = Math.max(0, c((v.x - v.half - m.x0) / m.W)), i1 = Math.min(LUM_N - 1, c((v.x + v.half - m.x0) / m.W));
+    const j0 = Math.max(0, c((v.y - v.half - m.y0) / m.W)), j1 = Math.min(LUM_N - 1, c((v.y + v.half - m.y0) / m.W));
+    let sum = 0, n = 0, all = 0;
+    for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+      all++;
+      const l = m.L[j * LUM_N + i];
+      if (l >= 0) { sum += l; n++; }
+    }
+    return n > 0.3 * all && n >= 4 ? sum / n : null;
+  }
+  function look() {
+    const svg = el("fSvg");
+    if (!svg || !st.v) return;
+    guideBtn();
+    const v = st.v, w = svg.getBoundingClientRect().width;
+    // the outline: in sky units, so it is the same on screen at any zoom; only over the view
+    const px = w ? (2 * v.half) / w : 0;
+    const f = el("fHalo");
+    if (f && px) {
+      for (const [k, val] of [["x", v.x - v.half], ["y", v.y - v.half], ["width", 2 * v.half], ["height", 2 * v.half]]) f.setAttribute(k, val);
+      f.querySelector("feMorphology").setAttribute("radius", (1.3 * px).toFixed(4));
+      f.querySelector("feGaussianBlur").setAttribute("stdDeviation", (0.6 * px).toFixed(4));
+    }
+    // the veil
+    const L = viewLum(), veil = el("fVeil"), b = el("fDim");
+    const auto = L != null && L > DIM_FROM ? Math.min(DIM_MAX, 1 - DIM_TO / L) : 0;
+    const on = st.dim == null ? auto > 0 : st.dim;
+    const a = !st.imgOK ? 0 : on ? (auto || 0.45) : 0;
+    if (veil) {
+      for (const [k, val] of [["x", v.x - v.half], ["y", v.y - v.half], ["width", 2 * v.half], ["height", 2 * v.half]]) veil.setAttribute(k, val);
+      veil.setAttribute("opacity", a.toFixed(2));
+    }
+    if (b) {
+      b.hidden = !st.imgOK;
+      b.classList.toggle("on", a > 0);
+      b.setAttribute("aria-pressed", a > 0 ? "true" : "false");
+      b.textContent = a > 0 ? (st.dim == null ? "Dimmed (auto)" : "Dimmed") : "Dim image";
+    }
+  }
+  function toggleDim() {
+    const dimmed = +el("fVeil").getAttribute("opacity") > 0;
+    st.dim = !dimmed;
+    look();
+  }
+
+  // "Best guide star": the guider back on this pointing's best star (kept: the pointing)
+  function guideBtn() {
+    const b = el("fBestGuide"), js = st.js;
+    if (!b) return;
+    b.hidden = !(js && !js.mosaic && st.mode !== "mosaic"
+      && (js.generic ? st.ppaTouched : st.guiderTouched && js.guider && js.guider[0]));
+  }
+  function bestGuide() {
+    const js = st.js;
+    if (!js || js.mosaic) return;
+    if (js.generic) { st.ppaTouched = false; st.ppa = defaultPPA(); }
+    else if (js.guider && js.guider[0]) { st.guiderTouched = false; st.pa = js.guider[0].pa; }
+    redraw();
   }
 
   function backToRecommended() {
@@ -2416,6 +2515,8 @@ ${res.join("\n")}
     el("fMoon").addEventListener("change", whenNote);
     el("fViewField").addEventListener("click", () => st.js && preset("field"));
     el("fCentre").addEventListener("click", centreOnTarget);
+    el("fBestGuide").addEventListener("click", bestGuide);
+    el("fDim").addEventListener("click", toggleDim);
     el("fViewGuider").addEventListener("click", () => st.js && preset("guider"));
     el("fZoomIn").addEventListener("click", () => zoom(1 / 1.4));
     el("fZoomOut").addEventListener("click", () => zoom(1.4));

@@ -305,6 +305,7 @@
   #fSvg{width:100%;aspect-ratio:1/1;display:block;background:#0b1424;border-radius:10px;touch-action:none;cursor:grab;user-select:none}
   #fSvg.panning{cursor:grabbing}
   #fOut.stale #fTable,#fOut.stale #fMiss,#fOut.stale .cd-item.dep{opacity:.35;transition:opacity .12s}
+  #fDim.on{background:#1e293b;color:#fff;border-color:#1e293b}
   #fSvg .drag-field{cursor:move} #fSvg .drag-guider{cursor:alias}
   .fld-guide{font-size:12.5px;color:var(--grey);margin-top:8px;line-height:1.5}
   .fld-guide b{font-family:var(--mono);color:var(--ink)}
@@ -337,7 +338,7 @@
     <div class="sub">Where the mount can go — <em>anytime, anywhere</em>.</div>
   </div>
   <div class="hdr-right">
-    <div class="ver">v1.1.0</div>
+    <div class="ver">v1.2.0</div>
     <div class="sig">By <strong>Cleber Silva</strong> · UFC/MALTED · <a href="https://github.com/cleber-si/skybound" target="_blank" rel="noopener">source</a></div>
   </div>
 </header>
@@ -680,12 +681,24 @@
               <button class="btn-ghost btn-sm" id="fViewGuider" type="button">With guider</button>
               <button class="btn-ghost btn-sm" id="fZoomIn" type="button" title="zoom in">+</button>
               <button class="btn-ghost btn-sm" id="fZoomOut" type="button" title="zoom out">−</button>
+              <button class="btn-ghost btn-sm" id="fBestGuide" type="button" title="the best guide star for this pointing again, after the guider was moved by hand" hidden>Best guide star</button>
+              <button class="btn-ghost btn-sm" id="fDim" type="button" title="darken the sky image so the overlays stand out (set by itself on bright images; click to change)" hidden>Dim image</button>
               <button class="btn-ghost btn-sm" id="fCentre" type="button" title="point the field centre at the target (offset 0, 0) and score that pointing" hidden>Centre</button>
               <button class="btn-ghost btn-sm" id="fReset" type="button" title="back to the recommended pointing and guide star" hidden>Recommended</button>
               <select id="fSurvey" class="fld-survey" aria-label="sky image survey" title="the survey behind the field (HiPS tiles from CDS)"></select>
               <span class="note" id="fImgNote">DSS2 red (CDS) · N up, E left</span>
             </div>
-            <svg id="fSvg" xmlns="http://www.w3.org/2000/svg"><g id="fLayStars"></g><g id="fLayImg"></g><g id="fLay"></g></svg>
+            <svg id="fSvg" xmlns="http://www.w3.org/2000/svg"><defs>
+              <!-- a dark outline under every overlay line, circle and label: they stay visible on a bright, crowded image -->
+              <filter id="fHalo" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+                <!-- from the lines and labels only: faint fills (alpha < 0.4) get no outline, nor darken what is inside them -->
+                <feComponentTransfer in="SourceAlpha" result="lines"><feFuncA type="discrete" tableValues="0 0 0 0 1 1 1 1 1 1"/></feComponentTransfer>
+                <feMorphology in="lines" operator="dilate" radius="1" result="grown"/>
+                <feGaussianBlur in="grown" stdDeviation="0.5" result="soft"/>
+                <feFlood flood-color="#0b1424" flood-opacity="0.85"/>
+                <feComposite in2="soft" operator="in" result="halo"/>
+                <feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter></defs><g id="fLayStars"></g><g id="fLayImg"></g><rect id="fVeil" fill="#0b1424" opacity="0" pointer-events="none"/><g id="fLay" filter="url(#fHalo)"></g></svg>
             <div class="fld-guide" id="fGuide"></div>
             <div class="tl-legend" id="fLegend"></div>
             <div class="fld-help" id="fHelp">Drag the sky to pan, scroll or use +/− to zoom, double-click to recentre.
@@ -1470,10 +1483,10 @@ tgtRestore();                          // first: a redraw stores the list, so it
 try{ const v=JSON.parse(localStorage.getItem(LIM_STORE)||"null"); if(v&&v.text) setCSV(v.text,v.label||"your limits",true); }catch(e){ /* none kept */ }
 render();
 </script>
-<script src="js/lookup.js?v=1.1.0"></script>
-<script src="js/fov.js?v=1.1.0"></script>
-<script src="js/hips.js?v=1.1.0"></script>
-<script src="js/engine.js?v=1.1.0"></script>
-<script src="js/field.js?v=1.1.0"></script>
+<script src="js/lookup.js?v=1.2.0"></script>
+<script src="js/fov.js?v=1.2.0"></script>
+<script src="js/hips.js?v=1.2.0"></script>
+<script src="js/engine.js?v=1.2.0"></script>
+<script src="js/field.js?v=1.2.0"></script>
 </body>
 </html>
