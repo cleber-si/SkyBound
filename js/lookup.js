@@ -1,8 +1,8 @@
 "use strict";
-/* SkyBound · target name lookup without the s4field helper.
+/* SkyBound · target name lookup in the page.
 
-   Tried in this order, fastest first (field.js first looks in the target list, and
-   asks the helper when it is the one in use):
+   Tried in this order, fastest first. field.js looks in the target list first, and
+   puts the local s4field helper, when it is in use, between steps 2 and 3:
      1. remembered: a name looked up online before, in this browser (no network);
      2. offline, the reference tables: js/targets.js, built from the
         toi_transits.py reference_tables/ folder by tools/build_targets.py and

@@ -12,7 +12,7 @@ For one target it reports:
 
 Since 0.13 it also ranks comparison stars for **any other instrument** whose field of view SkyBound has loaded (an Aladin FoV file or its New FoV form), in basic mode and one band: section 12b.
 
-Version 0.17.0 · By Cleber Silva · UFC/MALTED
+Version 0.18.0 · By Cleber Silva · UFC/MALTED
 
 ---
 
@@ -611,6 +611,7 @@ The network resolvers are tested with mocked responses, so the suite runs offlin
 
 ## 14. Version history
 
+- **0.18.0** (2026-11-26): the helper's `/api/field` and `/api/cone` take `pos=ra,dec` (degrees, J2000) with the target's name: the position SkyBound already found (reference tables, an earlier lookup), so the name is not looked up again. A position saved with a cached cone still wins. `obtain_field(..., known=Resolution)` does the same from Python.
 - **0.17.0** (2026-11-24): after the ESA archive cannot be reached (`ArchiveUnreachable`, including a connection lost while a job runs, which used to escape as a plain network error instead of falling back to GAVO), `auto` skips it for `ESA_RETRY_AFTER` (30 min; 12 h in the browser), new cones come straight from GAVO and background upgrades wait. `Api.status()` reports `esa_down_until`.
 - **0.16.0** (2026-11-24): the helper's API is a class, `Api(cache_dir, source, background)`, with `get(path, query)` and `post(path, body)` returning (status, JSON); `--serve` puts HTTP around it, and SkyBound's in-browser engine (Pyodide) calls it directly, so both answer the same. Background downloads run in a thread, or queued (`background="queue"`, `run_queue()`) where there are no threads. Checked under Pyodide 0.29.5 (numpy 2.2.5): the same pointings, comparisons, guide stars and reports as native Python; floats agree to the last bit or two.
 - **0.15.0** (2026-11-24): no astropy: numpy is the only requirement (matplotlib only for the command-line figures). s4field's own star table, CSV reader and writer, coordinate parsing (`hh:mm:ss`, `h m s`, degrees), `hh:mm:ss` formatting, decimal year and Sesame lookup replace astropy's. Checked against astropy to the last bit: 200 000 formatted positions, 60 000 parsed coordinates (one difference, 1e-13 deg, on an RA of 150 hours), every column of real-shaped cones with missing values, and the full results, star-list CSVs, reports and figures of 10 fields. Reading a star list: 0.38 -> 0.08 s.

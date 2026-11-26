@@ -338,7 +338,7 @@
     <div class="sub">Where the mount can go — <em>anytime, anywhere</em>.</div>
   </div>
   <div class="hdr-right">
-    <div class="ver">v1.2.0</div>
+    <div class="ver">v1.3.0</div>
     <div class="sig">By <strong>Cleber Silva</strong> · UFC/MALTED · <a href="https://github.com/cleber-si/skybound" target="_blank" rel="noopener">source</a></div>
   </div>
 </header>
@@ -350,7 +350,7 @@
       <div class="top-col">
         <h2>Target</h2>
         <label>Name
-          <span class="hint">a star, exoplanet host, TOI or Gaia DR3 ID (the reference tables first, then online; the s4field helper when it is in use) · or type RA/Dec below</span>
+          <span class="hint">a star, exoplanet host, TOI or Gaia DR3 ID (the reference tables first, then the s4field helper or online) · or type RA/Dec below</span>
           <span class="name-row">
             <input type="text" id="tName" placeholder="e.g. AU Mic, HD 10038, TOI-2631" autocomplete="off">
             <button class="btn-primary" id="tFind" type="button">Find</button>
@@ -688,17 +688,7 @@
               <select id="fSurvey" class="fld-survey" aria-label="sky image survey" title="the survey behind the field (HiPS tiles from CDS)"></select>
               <span class="note" id="fImgNote">DSS2 red (CDS) · N up, E left</span>
             </div>
-            <svg id="fSvg" xmlns="http://www.w3.org/2000/svg"><defs>
-              <!-- a dark outline under every overlay line, circle and label: they stay visible on a bright, crowded image -->
-              <filter id="fHalo" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
-                <!-- from the lines and labels only: faint fills (alpha < 0.4) get no outline, nor darken what is inside them -->
-                <feComponentTransfer in="SourceAlpha" result="lines"><feFuncA type="discrete" tableValues="0 0 0 0 1 1 1 1 1 1"/></feComponentTransfer>
-                <feMorphology in="lines" operator="dilate" radius="1" result="grown"/>
-                <feGaussianBlur in="grown" stdDeviation="0.5" result="soft"/>
-                <feFlood flood-color="#0b1424" flood-opacity="0.85"/>
-                <feComposite in2="soft" operator="in" result="halo"/>
-                <feMerge><feMergeNode in="halo"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter></defs><g id="fLayStars"></g><g id="fLayImg"></g><rect id="fVeil" fill="#0b1424" opacity="0" pointer-events="none"/><g id="fLay" filter="url(#fHalo)"></g></svg>
+            <svg id="fSvg" xmlns="http://www.w3.org/2000/svg"><g id="fLayStars"></g><g id="fLayImg"></g><rect id="fVeil" fill="#0b1424" opacity="0" pointer-events="none"/><g id="fLay"></g></svg>
             <div class="fld-guide" id="fGuide"></div>
             <div class="tl-legend" id="fLegend"></div>
             <div class="fld-help" id="fHelp">Drag the sky to pan, scroll or use +/− to zoom, double-click to recentre.
@@ -731,9 +721,10 @@
       <b>Two timers.</b> <em>Time to limit</em> is the mount's pointing limit alone (comparable to a mount’s own time-to-limit, shown even in daylight); <em>Observable</em> folds in darkness.<br>
       <b>Sun &amp; Moon.</b> Sun ≈ 0.01°; Moon from the full Meeus (ELP-2000) series, ≈ 1 arcmin.<br>
       <b>Time.</b> Selected observatory's local civil time (fixed UTC offset). The chart runs local noon to noon.<br>
-      <b>Name lookup.</b> By <code>s4field</code> when it runs; without it, online from the browser (CDS Sesame; a Gaia DR3 ID from GAVO,
-      moved to epoch 2000), then the reference tables in <code>js/targets.js</code> (built by <code>tools/build_targets.py</code>; catalogue positions).
-      The message under the name says which source answered.<br>
+      <b>Name lookup.</b> Fastest first, in every mode: the target list, names looked up before in this browser, the reference
+      tables in <code>js/targets.js</code> (built by <code>tools/build_targets.py</code>; catalogue positions), then the local <code>s4field</code>
+      helper when it runs (Sesame, then the NASA Exoplanet Archive), otherwise the browser itself (CDS Sesame; a Gaia DR3 ID from GAVO,
+      moved to epoch 2000). The message under the name says which source answered.<br>
       <b>Comparison field.</b> Done by <code>s4field</code> (SPARC4 on the OPD 1.6 m), which runs on your computer: start it with
       <code>python3 s4field/s4field.py --serve</code> from the SkyBound folder. It needs the network only the first time a target is used
       (Gaia DR3 from the ESA archive, or GAVO's reduced copy when ESA is down); cones are then kept in <code>cones/</code>.
@@ -1483,10 +1474,10 @@ tgtRestore();                          // first: a redraw stores the list, so it
 try{ const v=JSON.parse(localStorage.getItem(LIM_STORE)||"null"); if(v&&v.text) setCSV(v.text,v.label||"your limits",true); }catch(e){ /* none kept */ }
 render();
 </script>
-<script src="js/lookup.js?v=1.2.0"></script>
-<script src="js/fov.js?v=1.2.0"></script>
-<script src="js/hips.js?v=1.2.0"></script>
-<script src="js/engine.js?v=1.2.0"></script>
-<script src="js/field.js?v=1.2.0"></script>
+<script src="js/lookup.js?v=1.3.0"></script>
+<script src="js/fov.js?v=1.3.0"></script>
+<script src="js/hips.js?v=1.3.0"></script>
+<script src="js/engine.js?v=1.3.0"></script>
+<script src="js/field.js?v=1.3.0"></script>
 </body>
 </html>

@@ -36,7 +36,7 @@ By Cleber Silva · UFC/MALTED
 
 from __future__ import annotations
 
-__version__ = "0.17.0"
+__version__ = "0.18.0"
 
 import argparse
 import copy
@@ -2584,7 +2584,7 @@ def _download(text, rz, cache_dir, lite, radius=CONE_RADIUS):
 
 
 def obtain_field(text, cache_dir="cones", offline=False, refresh=False, source="auto",
-                 radius=CONE_RADIUS, need=0.0):
+                 radius=CONE_RADIUS, need=0.0, known=None):
     """Catalogue and target position for `text`, from the cache or the network.
     Returns (table, Resolution).
 
@@ -2596,6 +2596,10 @@ def obtain_field(text, cache_dir="cones", offline=False, refresh=False, source="
     radius [deg]: the cone to download; a cached cone serves if it is at least
     `need` [deg] (a larger FoV than SPARC4's). If none is large enough and the
     download fails, the largest cached one is used (its note says so).
+
+    known: a Resolution for `text` found elsewhere (SkyBound sends the position
+    it already has, from its reference tables or an earlier lookup), so the name
+    is not looked up again. A position saved with a cached cone still comes first.
     """
     if source not in SOURCES:
         raise ValueError(f"source must be one of {SOURCES}")
@@ -2619,6 +2623,8 @@ def obtain_field(text, cache_dir="cones", offline=False, refresh=False, source="
     if rz is not None:
         src = rz.source[7:-1] if rz.source.startswith("cache (") else rz.source
         rz = Resolution(text, rz.ra, rz.dec, src, rz.note)
+    elif known is not None:
+        rz = known
     else:
         try:
             rz = resolve_target(text, None, offline=False)
@@ -3160,6 +3166,16 @@ class Api:
                     self.upgrading.discard(key)
         self._later(work)
 
+    @staticmethod
+    def known_position(q):
+        """pos=ra,dec [deg, J2000] sent with a name: where SkyBound already found it."""
+        if not q.get("pos"):
+            return None
+        v = [float(x) for x in q["pos"].replace(" ", ",").split(",") if x]
+        if len(v) != 2 or not (0 <= v[0] < 360 and -90 <= v[1] <= 90):
+            raise ValueError("pos needs ra,dec in degrees")
+        return Resolution(q["target"], v[0], v[1], q.get("pos_source") or "position sent by SkyBound")
+
     def cone(self, q, geom=None):
         src, text = q.get("source", self.source), q["target"]
         refresh, offline = q.get("refresh") == "1", q.get("offline") == "1"
@@ -3177,9 +3193,10 @@ class Api:
                 if not offline:
                     self.enlarge_later(text, radius, src)
                 return small
+        known = self.known_position(q)
         with self.lock:
             return obtain_field(text, self.cache_dir, refresh=refresh, source=src, offline=offline,
-                                radius=radius, need=need)
+                                radius=radius, need=need, known=known)
 
     def status(self):
         import glob, os

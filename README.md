@@ -17,7 +17,7 @@ Open `index.html` in a browser, either from disk or from the GitHub Pages site. 
 
 The page opens without a target: the plot shows the night and the Moon until you give one.
 
-1. **Target.** Type a name (a star, exoplanet host, TOI or Gaia DR3 ID) and press *Find*, or type RA/Dec. You can also paste both coordinates into the name box. A name already in the target list, or looked up before in this browser, needs no lookup. Otherwise it is looked up by the s4field helper when it is in use; in the browser, the reference tables come first and the online services (Sesame) last (see below).
+1. **Target.** Type a name (a star, exoplanet host, TOI or Gaia DR3 ID) and press *Find*, or type RA/Dec. You can also paste both coordinates into the name box. A name already in the target list, or looked up before in this browser, needs no lookup. Otherwise the reference tables come first, then the s4field helper when it is in use, or else the online services (Sesame) from the browser: the same order in every mode (see below).
    - **Several targets.** Every target you give joins the *Targets* list under the coordinates: a looked-up name keeps its name, coordinates typed by hand become *Target 1*, *Target 2*, … (once both RA and Dec are typed, or on Enter / *Compute*; until then *+ add these coordinates to the list*). Click a target to select it, × to remove it. The list is kept in this browser, with the selected target, so it is there on the next visit; *clear all* empties it. You can also select a target where you are working: by its name in the airmass plot's legend, or from the target list in the comparison field (above the controls, and in the summary bar once a field is shown).
    - **Target lists in files.** *save list* downloads the list as `skybound_targets.csv` (`name,ra,dec`, J2000, RA in hours). *Load a target list…* adds the targets of such a file: comma, tab or semicolon separated, with or without a header (`name`/`target`/`object`, `ra`/`ra_deg`, `dec`/`dec_deg`). RA is read in hours, or in degrees when the header says so or the value is over 24. A row with only a name is looked up like the name box; targets already in the list are not repeated. A file's own coordinates are used for the comparison field, not a lookup of its names.
    - The **selected** target is the one in the RA/Dec boxes: the status, timers, pointing bar and comparison field follow it. The airmass plot shows every target in its own colour, the selected one thicker.
@@ -33,7 +33,7 @@ The page opens without a target: the plot shows the night and the Moon until you
    - The field is computed by itself as soon as there is a target (and again when the target, instrument or settings change); *Find field* asks again.
    - **An empty position** (no Gaia star there, such as a pointing test) still gets its field, centred on the position, with a warning: guider and star list, but no comparison stars or η.
    - **The sky view is interactive:** drag to pan, scroll or +/− to zoom, double-click to recentre. Drag the gold field to try another pointing; it is scored when you let go, and turns red if the target falls off it. Drag the blue guider box around its circle to pick the guide star; the Guider Setup angle and the star in the box update as you go. *Recommended* puts both back. *Centre* puts the field centre on the target (offset 0, 0) and scores that pointing. *Best guide star* (shown once the guider has been moved by hand) puts the guider back on the best guide star for the pointing on screen, without moving the field.
-   - **Readable on any image.** Every line, circle and label of the overlay has a thin dark outline. When the image under the view is bright, as in crowded fields such as the LMC, SkyBound measures its brightness from the pixels and dims it by that much (*Dimmed (auto)*), so the overlay keeps its colours and the legend stays true. Click the button to turn the dimming off or on.
+   - **Readable on any image.** When the image under the view is bright, as in crowded fields such as the LMC, SkyBound measures its brightness from the pixels and dims it by that much (*Dimmed (auto)*), so the overlay keeps its colours and the legend stays true. Click the button to turn the dimming off or on.
 
 The page remembers the telescope, the instrument, the loaded FoV files, the comparison-field settings, the target list and the pointing limits in this browser.
 
@@ -108,7 +108,7 @@ SkyBound is a static page, so GitHub Pages can serve it as it is: `index.html` a
 - **The helper is opt-in there.** A public site reaching a program on the visitor's computer makes the browser ask first (Chrome's "local network access" prompt; a refusal sticks for that site). So on a hosted page SkyBound doesn't look for s4field until you click *Use my local helper* in the field card; the choice is remembered. Opened from disk or from `localhost`, it looks for the helper as before.
 - **Without the helper**, everything but the comparison stars works: visibility, targets and name lookup, FoVs and their sky drawing, mosaics and their exports. Comparison stars computed in the browser itself (no install, after a download the user agrees to) are the next step.
 
-### Name lookup without the helper
+### Name lookup
 
 The target list comes first: a name already in it is used as it is, with no lookup. Then `js/lookup.js` tries, fastest first:
 
@@ -122,7 +122,9 @@ The target list comes first: a name already in it is used as it is, with no look
    It reads the ExoFOP and NASA TOI lists, the NASA Exoplanet Archive (PS or PSCompPars) and exoplanet.eu; when a name is in several, the first of those wins. Planets fold into their host star (`AU Mic b`, `TOI-2631.01` find the star). Commit `js/targets.js` so that the GitHub Pages copy has it too.
 3. **Online, from the browser**, for names the tables don't have. A `Gaia DR3 …` ID goes to GAVO's `gaia.dr3lite` (the one Gaia service a page may read; the position is moved to epoch 2000 with its proper motion). Any other name goes to CDS Sesame (SIMBAD, then VizieR), in Strasbourg, then at the CfA mirror. This comes last because a Sesame that doesn't answer costs up to 8 s per mirror.
 
-With the helper in use (not the in-browser engine), a name not in the list or remembered goes to the helper first, which asks Sesame and the NASA Exoplanet Archive itself; the tables are the fallback.
+With the local helper in use, it takes step 3's place: a name the tables don't have goes to the helper, which asks Sesame (CfA mirror, then Strasbourg) and then the NASA Exoplanet Archive from your computer. After Sesame times out, the helper skips it for 30 minutes. The in-browser engine changes nothing here: names are looked up by the page.
+
+The comparison field is then asked for by name with the position already found (`pos=ra,dec`), so the helper never looks the same name up twice; a star list it has cached for that name keeps its own position.
 
 The message under the name box says which source answered. `tools/lookup_test.html` tries every layer separately in your browser.
 
@@ -136,7 +138,7 @@ The message under the name box says which source answered. `tools/lookup_test.ht
 | `js/engine-worker.js` | The Web Worker: loads Pyodide, numpy and `s4field/s4field.py`, keeps the Gaia star lists in the browser |
 | `js/hips.js` | Sky images behind the field (DSS2, 2MASS, AllWISE, …) drawn from HiPS tiles |
 | `js/fov.js` | Instrument fields of view: built-in SPARC4, the Aladin FoV parser, roles, per-instrument settings, the New FoV builder, mosaic tiling, the browser's FoV library |
-| `js/lookup.js` | Name lookup without the helper: online from the browser, then the reference tables |
+| `js/lookup.js` | Name lookup in the page: remembered names, the reference tables, then Sesame or GAVO from the browser |
 | `js/targets.js` | Offline name index, built by `tools/build_targets.py` (not in the repository until you build it) |
 | `s4field/` | s4field: field finder, its documentation and tests |
 | `assets/` | Logo files: mark, lockups (light and dark), app icon, favicon source, apple-touch-icon |

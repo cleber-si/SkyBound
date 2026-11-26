@@ -822,6 +822,22 @@ class TestSources(unittest.TestCase):
                 self.assertFalse(tab.meta["lite"])
                 self.assertEqual(F.Api(d).status()["esa_down_until"], 0.0)
 
+    def test_known_position_skips_the_lookup(self):
+        # SkyBound sends the position it already has (pos=ra,dec): no second name lookup
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            with mock.patch.object(F, "resolve_target", side_effect=AssertionError("looked up again")), \
+                    mock.patch.object(F, "gaia_tap", return_value=self.FULL):
+                tab, rz = F.obtain_field("AU Mic", d, known=self.RZ)
+                self.assertEqual((rz.ra, rz.dec), (self.RZ.ra, self.RZ.dec))
+                tab, rz = F.obtain_field("AU Mic", d, known=F.Resolution("AU Mic", 0.0, 0.0, "x"))
+                self.assertEqual((rz.ra, rz.dec), (self.RZ.ra, self.RZ.dec))   # the cached cone's position wins
+        q = {"target": "AU Mic", "pos": "311.289712,-31.340899"}
+        self.assertEqual((F.Api.known_position(q).ra, F.Api.known_position(q).dec), (311.289712, -31.340899))
+        self.assertIsNone(F.Api.known_position({"target": "AU Mic"}))
+        with self.assertRaises(ValueError):
+            F.Api.known_position({"target": "x", "pos": "400,0"})
+
     def test_an_esa_error_answer_does_not_skip_it(self):
         import tempfile
         F._ESA_DOWN_UNTIL = 0.0
@@ -1016,7 +1032,7 @@ class TestServe(unittest.TestCase):
         self.assertIn(b"SkyBound", body)
         code, ctype, _ = self.raw("/js/field.js")
         self.assertEqual((code, ctype.split(";")[0]), (200, "text/javascript"))
-        self.assertEqual(self.raw("/js/field.js?v=1.2.0")[0], 200)          # the page asks with ?v=
+        self.assertEqual(self.raw("/js/field.js?v=1.3.0")[0], 200)          # the page asks with ?v=
         # nothing outside the folder, no hidden files, no unknown types
         for bad in ("/../../etc/passwd", "/%2e%2e/%2e%2e/etc/passwd", "/.git/config", "/s4field/s4field.pyc"):
             self.assertEqual(self.raw(bad)[0], 404, bad)

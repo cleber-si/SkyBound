@@ -325,6 +325,13 @@ const Field = (() => {
   // what s4field is asked for: the name (the helper resolves it), or, in the browser,
   // the coordinates the page already has (web pages may not ask the Exoplanet Archive)
   const reqTarget = () => (useEngine() ? coordText() || fieldTarget() : fieldTarget());
+  // with the helper, a named target is sent by name (its star list is cached under that name)
+  // together with the position the page already has: the helper doesn't look it up again
+  function setTarget(p) {
+    const t = reqTarget(), c = coordText();
+    p.set("target", t);
+    if (c && t !== c) p.set("pos", c.replace(" ", ","));
+  }
   const targetLabel = () => {
     const t = listed();
     if (!fieldTarget()) return "";
@@ -372,20 +379,11 @@ const Field = (() => {
     el("tFind").disabled = true;
     nameMsg("", `looking up <b>${esc(text)}</b>…`);
     try {
-      // with s4field in this browser, names are looked up by the page itself (it may still be loading)
-      if (useEngine()) throw new Error("HELPER_DOWN");
-      const js = await api("/api/resolve?target=" + encodeURIComponent(text), 90000);
-      if (typeof Lookup !== "undefined") Lookup.remember(text, js);
-      useName(text, js.ra, js.dec, `${esc(js.source)}${js.note ? " · " + esc(js.note) : ""}`);
-      if (el("fieldBody").style.display !== "none") compute(false);   // straight to its field
+      const h = await lookupName(text);
+      useName(text, h.ra, h.dec, h.label);
     } catch (e) {
-      if (e.message === "HELPER_DOWN") await findWithoutHelper(text);
-      else if (e.message === "TIMEOUT") nameMsg("bad", "The lookup took too long. Try again, or type RA/Dec below.");
-      else {                             // the helper answered but doesn't know the name: last resort, the tables
-        const hit = typeof Lookup !== "undefined" ? await Lookup.fromTables(text).catch(() => null) : null;
-        if (hit && !hit.missing) useName(text, hit.ra, hit.dec, lookupLabel(hit));
-        else nameMsg("bad", esc(e.message).replace(/\n\s*/g, "<br>"));
-      }
+      if (e.message === "TIMEOUT") nameMsg("bad", "The lookup took too long. Try again, or type RA/Dec below.");
+      else nameMsg("bad", e.html ? e.message : esc(e.message).replace(/\n\s*/g, "<br>"));
     } finally {
       el("tFind").disabled = false;
     }
@@ -402,41 +400,49 @@ const Field = (() => {
     save();
     render();
   }
-  // a name's J2000 position (degrees), for the target-list loader: the helper when it is
-  // in use, else the page's own lookups (online, then the reference tables); null if unknown
-  async function resolve(text) {
-    const r = typeof Lookup !== "undefined" ? Lookup.recall(text) : null;
-    if (r) return { ra: r.ra, dec: r.dec };
+  // One order in every mode, fastest first (find() has already tried the target list and the
+  // names remembered by this browser):
+  //   1. the reference tables (js/targets.js), in the page: no network, ~0.15 s;
+  //   2. the local helper, when it is in use: Sesame and the NASA Exoplanet Archive, from
+  //      your computer, where no CORS rule stops it;
+  //   3. otherwise (no helper, or s4field in this browser) the page's own online lookups:
+  //      a Gaia DR3 ID from GAVO, any other name from Sesame.
+  // The field is then asked for with the position found here (pos=), so the helper never
+  // looks the name up a second time.
+  async function lookupName(text) {
+    const L = typeof Lookup !== "undefined" ? Lookup : null;
+    const hit = L ? await L.fromTables(text).catch(() => null) : null;
+    if (hit && !hit.missing) {
+      return { ra: hit.ra, dec: hit.dec, label: `${lookupLabel(hit)} <span class="hint">· looked up in this browser</span>` };
+    }
     if (!useEngine() && (st.helperPref ?? helperOn())) {
       try {
         const js = await api("/api/resolve?target=" + encodeURIComponent(text), 90000);
-        if (typeof Lookup !== "undefined") Lookup.remember(text, js);
-        return { ra: js.ra, dec: js.dec };
-      } catch (e) { /* not running, or it doesn't know the name: the page's own lookups */ }
+        if (L) L.remember(text, js);
+        return { ra: js.ra, dec: js.dec, label: `${esc(js.source)}${js.note ? " · " + esc(js.note) : ""}` };
+      } catch (e) {
+        if (e.message !== "HELPER_DOWN") throw e;      // it answered: too slow, or it doesn't know the name
+      }
     }
-    if (typeof Lookup === "undefined") return null;
-    try { const h = await Lookup.resolve(text); return { ra: h.ra, dec: h.dec }; }
-    catch (e) {
-      const hit = await Lookup.fromTables(text).catch(() => null);
-      return hit && !hit.missing ? { ra: hit.ra, dec: hit.dec } : null;
+    if (!L) throw new Error(`Name lookup needs the s4field helper: run ${START}, or type RA/Dec below.`);
+    nameMsg("", `looking up <b>${esc(text)}</b> online, from this browser…`);
+    try {
+      const h = await L.resolve(text, { memo: false });   // the tables again (instant), then GAVO or Sesame
+      return { ra: h.ra, dec: h.dec, label: `${lookupLabel(h)} <span class="hint">· looked up in this browser</span>` };
+    } catch (e) {
+      const err = new Error(e.message);
+      err.html = true;                    // lookup.js's message is already HTML, names escaped
+      throw err;
     }
+  }
+  // a name's J2000 position (degrees), for the target-list loader; null if unknown
+  async function resolve(text) {
+    const r = typeof Lookup !== "undefined" ? Lookup.recall(text) : null;
+    if (r) return { ra: r.ra, dec: r.dec };
+    try { const h = await lookupName(text); return { ra: h.ra, dec: h.dec }; }
+    catch (e) { return null; }
   }
   const lookupLabel = (h) => `${esc(h.source)}${h.note ? " · " + esc(h.note) : ""}`;
-
-  // no helper: js/lookup.js looks in the reference tables, then asks the online resolvers
-  async function findWithoutHelper(text) {
-    if (typeof Lookup === "undefined") {
-      nameMsg("bad", `Name lookup needs the s4field helper: run ${START}, or type RA/Dec below.`);
-      return;
-    }
-    nameMsg("", `looking up <b>${esc(text)}</b> in this browser…`);
-    try {
-      const h = await Lookup.resolve(text);
-      useName(text, h.ra, h.dec, `${lookupLabel(h)} <span class="hint">· looked up in this browser</span>`);
-    } catch (e) {
-      nameMsg("bad", e.message);         // already HTML, names escaped
-    }
-  }
 
   function coordsEdited() {            // RA/Dec typed by hand: the name no longer applies
     if (st.name && st.nameFor && (el("ra").value !== st.nameFor.ra || el("dec").value !== st.nameFor.dec)) {
@@ -493,7 +499,7 @@ const Field = (() => {
     const s = sb(), target = fieldTarget();
     if (!target) throw new Error("Give the target a name or valid RA/Dec at the top of the page.");
     const p = new URLSearchParams();
-    p.set("target", reqTarget());
+    setTarget(p);
     p.set("mode", el("fMode").value);
     if (st.at) p.set("at", `${st.at.e.toFixed(1)},${st.at.n.toFixed(1)}`);
     p.set("max_comps", String(maxComps()));
@@ -648,7 +654,7 @@ const Field = (() => {
   }
   function genericParams() {
     const s = sb(), cfg = FoV.settingsOf(st.fov), p = new URLSearchParams();
-    p.set("target", reqTarget());
+    setTarget(p);
     p.set("band", cfg.band);
     p.set("margin", String(cfg.margin));
     p.set("iso", String(cfg.iso));
@@ -1661,11 +1667,12 @@ const Field = (() => {
   }
 
   /* ---- readability on any sky image ------------------------------------------
-     Every overlay gets a dark outline (the fHalo filter, about 1.3 screen pixels
-     wide, whatever the zoom), and when the image under the view is bright -- a
-     crowded field such as the LMC -- a dark veil dims it, by how bright it is
-     (measured from its pixels), so lines, circles and labels keep their colours
-     (the legend stays true) and stand out. "Dim image" overrides it. */
+     When the image under the view is bright -- a crowded field such as the LMC --
+     a dark veil dims it, by how bright it is (measured from its pixels), so lines,
+     circles and labels keep their colours (the legend stays true) and stand out.
+     "Dim image" overrides it. (v1.2.0 also gave every overlay a dark outline, an
+     SVG filter: browsers render that differently at each page zoom -- blocky in
+     Firefox, heavy chains around the dashed circles -- so it is gone.) */
   const LUM_N = 96;                      // the measured image: LUM_N x LUM_N cells
   const DIM_FROM = 0.3, DIM_TO = 0.22, DIM_MAX = 0.6;
   // the luminance of an image covering x0..x0+W, y0..y0+W (sky frame, arcsec); null if unreadable
@@ -1703,15 +1710,7 @@ const Field = (() => {
     const svg = el("fSvg");
     if (!svg || !st.v) return;
     guideBtn();
-    const v = st.v, w = svg.getBoundingClientRect().width;
-    // the outline: in sky units, so it is the same on screen at any zoom; only over the view
-    const px = w ? (2 * v.half) / w : 0;
-    const f = el("fHalo");
-    if (f && px) {
-      for (const [k, val] of [["x", v.x - v.half], ["y", v.y - v.half], ["width", 2 * v.half], ["height", 2 * v.half]]) f.setAttribute(k, val);
-      f.querySelector("feMorphology").setAttribute("radius", (1.3 * px).toFixed(4));
-      f.querySelector("feGaussianBlur").setAttribute("stdDeviation", (0.6 * px).toFixed(4));
-    }
+    const v = st.v;
     // the veil
     const L = viewLum(), veil = el("fVeil"), b = el("fDim");
     const auto = L != null && L > DIM_FROM ? Math.min(DIM_MAX, 1 - DIM_TO / L) : 0;
